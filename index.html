@@ -617,9 +617,10 @@
             saveData() { 
                 localStorage.setItem('meuControleSPA', JSON.stringify(this.data)); 
                 if (this.scriptUrl && this.scriptUrl !== 'COLE_AQUI_A_URL_DO_APPS_SCRIPT') {
-                    // Forçamos o envio como texto simples para evitar bloqueios de segurança do navegador (CORS)
+                    // Adicionado o 'no-cors' para forçar o envio e ignorar o bloqueio de segurança do navegador no POST
                     fetch(this.scriptUrl, {
                         method: 'POST',
+                        mode: 'no-cors',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ action: 'sync', transactions: this.data.transactions })
                     }).catch(err => console.log('Erro de ligação com a base de dados', err));
@@ -993,7 +994,6 @@
 
                 if (id) {
                     const transaction = { id, tipo, descricao, valor, data: dataStr, categoria, cartao, banco, bandeira };
-                    // Correção: Garantir que a comparação é feita como Texto (String)
                     const idx = this.data.transactions.findIndex(t => String(t.id) === String(id));
                     if (idx >= 0) { this.data.transactions[idx] = transaction; this.showToast("Atualizado com sucesso!"); }
                 } else {
@@ -1025,7 +1025,6 @@
             },
 
             editTransaction(id) {
-                // Correção: Garantir que a comparação é feita como Texto (String)
                 const t = this.data.transactions.find(x => String(x.id) === String(id));
                 if (!t) return;
                 this.openModal();
@@ -1051,7 +1050,6 @@
 
             deleteTransaction(id) {
                 this.showConfirm("Deseja eliminar este registo?", () => {
-                    // Correção Principal: Forçar conversão para String para ambos os lados
                     this.data.transactions = this.data.transactions.filter(t => String(t.id) !== String(id));
                     this.saveData(); 
                     this.renderCurrentView(); 
