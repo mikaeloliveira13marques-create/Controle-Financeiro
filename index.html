@@ -19,14 +19,14 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        primary: '#3B82F6', // Blue 500
+                        primary: '#3B82F6', 
                         primary_dark: '#2563EB',
-                        accent: '#8B5CF6', // Purple 500
+                        accent: '#8B5CF6', 
                         success: '#10B981',
                         danger: '#EF4444',
                         invest: '#8B5CF6',
-                        dark: '#0A0D14', // Deep background
-                        surface: '#111622', // Card background
+                        dark: '#0A0D14', 
+                        surface: '#111622', 
                         surface_hover: '#1A2130',
                         border_color: '#1F2532'
                     }
@@ -83,13 +83,11 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Customizing Inputs for Dark Theme */
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; cursor: pointer; }
     </style>
 </head>
 <body class="antialiased overflow-hidden h-screen flex flex-col relative">
 
-    <!-- Efeito de fundo brilhante suave -->
     <div class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none z-0"></div>
     <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent/10 blur-[120px] pointer-events-none z-0"></div>
 
@@ -177,7 +175,7 @@
                     <div class="flex items-center gap-3">
                         <button onclick="app.toggleMenu()" class="md:hidden text-slate-300 hover:text-white p-1 text-xl"><i class="fa-solid fa-bars"></i></button>
                         <div>
-                            <h1 class="text-xl md:text-2xl font-bold text-white leading-tight" id="header-title">Visão Geral </h1>
+                            <h1 class="text-xl md:text-2xl font-bold text-white leading-tight" id="header-title">Visão Geral 👋</h1>
                         </div>
                     </div>
                     <button onclick="app.openModal()" class="hidden md:flex bg-primary hover:bg-primary_dark text-white font-medium rounded-xl text-sm px-5 py-2.5 transition shadow-[0_0_15px_rgba(59,130,246,0.3)] items-center gap-2 border border-primary/50">
@@ -213,7 +211,7 @@
                 <!-- VIEW: DASHBOARD -->
                 <div id="view-dashboard" class="view-section active max-w-7xl mx-auto space-y-6">
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                        <!-- Saldo Card (Premium) -->
+                        <!-- Saldo Card -->
                         <div class="card premium-gradient flex flex-col justify-center p-6 col-span-2 shadow-[0_10px_30px_rgba(59,130,246,0.2)]">
                             <div class="text-white/80 text-sm font-medium mb-1 flex justify-between items-center">
                                 Saldo Disponível <div class="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-xs"><i class="fa-solid fa-building-columns"></i></div>
@@ -481,7 +479,6 @@
     </div>
 
     <script>
-        // Configuração Global do Chart.js para o tema Dark
         Chart.defaults.color = '#64748B';
         Chart.defaults.font.family = 'Inter';
 
@@ -490,7 +487,7 @@
             chartInstance: null,
             confirmCallback: null,
             currentView: 'dashboard',
-            scriptUrl: 'https://script.google.com/macros/s/AKfycbwVvfphQTfYiftJS-Fpr1N5ziScCWHUchEdjVMzuHG2bbumcQMt5nxMeSt16VEWgv45/exec', // <--- INSIRA A URL AQUI
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbwVvfphQTfYiftJS-Fpr1N5ziScCWHUchEdjVMzuHG2bbumcQMt5nxMeSt16VEWgv45/exec', 
 
             async init() {
                 await this.loadData();
@@ -620,8 +617,10 @@
             saveData() { 
                 localStorage.setItem('meuControleSPA', JSON.stringify(this.data)); 
                 if (this.scriptUrl && this.scriptUrl !== 'COLE_AQUI_A_URL_DO_APPS_SCRIPT') {
+                    // Forçamos o envio como texto simples para evitar bloqueios de segurança do navegador (CORS)
                     fetch(this.scriptUrl, {
                         method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ action: 'sync', transactions: this.data.transactions })
                     }).catch(err => console.log('Erro de ligação com a base de dados', err));
                 }
@@ -692,7 +691,7 @@
                     else el.className = 'nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover border border-transparent rounded-xl font-medium transition';
                 });
 
-                const titles = { 'dashboard': 'Visão Geral ', 'receitas': 'Receitas ', 'despesas': 'Despesas ', 'cartoes': 'Cartões ', 'investimentos': 'Investimentos ' };
+                const titles = { 'dashboard': 'Visão Geral 👋', 'receitas': 'Receitas 💰', 'despesas': 'Despesas 💸', 'cartoes': 'Cartões 💳', 'investimentos': 'Investimentos 📈' };
                 document.getElementById('header-title').innerText = titles[viewId];
 
                 document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -766,7 +765,6 @@
                 const ctx = document.getElementById('mainChart').getContext('2d');
                 if (this.chartInstance) this.chartInstance.destroy();
                 
-                // Gradientes para os gráficos
                 const gradientRec = ctx.createLinearGradient(0, 0, 0, 300);
                 gradientRec.addColorStop(0, 'rgba(16, 185, 129, 0.8)');
                 gradientRec.addColorStop(1, 'rgba(16, 185, 129, 0.1)');
@@ -995,8 +993,9 @@
 
                 if (id) {
                     const transaction = { id, tipo, descricao, valor, data: dataStr, categoria, cartao, banco, bandeira };
-                    const idx = this.data.transactions.findIndex(t => t.id === id);
-                    if (idx >= 0) { this.data.transactions[idx] = transaction; this.showToast("Atualizado!"); }
+                    // Correção: Garantir que a comparação é feita como Texto (String)
+                    const idx = this.data.transactions.findIndex(t => String(t.id) === String(id));
+                    if (idx >= 0) { this.data.transactions[idx] = transaction; this.showToast("Atualizado com sucesso!"); }
                 } else {
                     if (cartao && parcelas > 1) {
                         const valParcela = Math.floor((valor / parcelas) * 100) / 100;
@@ -1026,7 +1025,8 @@
             },
 
             editTransaction(id) {
-                const t = this.data.transactions.find(x => x.id === id);
+                // Correção: Garantir que a comparação é feita como Texto (String)
+                const t = this.data.transactions.find(x => String(x.id) === String(id));
                 if (!t) return;
                 this.openModal();
                 document.getElementById('modal-title').innerText = 'Editar Registo';
@@ -1051,8 +1051,11 @@
 
             deleteTransaction(id) {
                 this.showConfirm("Deseja eliminar este registo?", () => {
-                    this.data.transactions = this.data.transactions.filter(t => t.id !== id);
-                    this.saveData(); this.renderCurrentView(); this.showToast("Eliminado.");
+                    // Correção Principal: Forçar conversão para String para ambos os lados
+                    this.data.transactions = this.data.transactions.filter(t => String(t.id) !== String(id));
+                    this.saveData(); 
+                    this.renderCurrentView(); 
+                    this.showToast("Eliminado com sucesso.");
                 });
             },
 
