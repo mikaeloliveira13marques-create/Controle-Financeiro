@@ -197,9 +197,9 @@
                         <option value="5">Junho</option>
                         <option value="6">Julho</option>
                         <option value="7">Agosto</option>
-                        <option value="8" selected>Setembro</option>
+                        <option value="8">Setembro</option>
                         <option value="9">Outubro</option>
-                        <option value="10">Novembro</option>
+                        <option value="10" selected>Novembro</option>
                         <option value="11">Dezembro</option>
                         <option value="all">Ano Completo</option>
                     </select>
@@ -487,7 +487,7 @@
             chartInstance: null,
             confirmCallback: null,
             currentView: 'dashboard',
-            scriptUrl: 'https://script.google.com/macros/s/AKfycbwVvfphQTfYiftJS-Fpr1N5ziScCWHUchEdjVMzuHG2bbumcQMt5nxMeSt16VEWgv45/exec', 
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbzJM9NxwzoqXPp4oROJb71NQveqwkhErXHNeYa5T10j3LmKVVr0Fv3Ne-OGc5ewCDnj/exec', 
 
             async init() {
                 await this.loadData();
@@ -617,13 +617,15 @@
             saveData() { 
                 localStorage.setItem('meuControleSPA', JSON.stringify(this.data)); 
                 if (this.scriptUrl && this.scriptUrl !== 'COLE_AQUI_A_URL_DO_APPS_SCRIPT') {
-                    // Adicionado o 'no-cors' para forçar o envio e ignorar o bloqueio de segurança do navegador no POST
+                    // Atualizado para contornar o bloqueio CORS enviando sem cabeçalhos complexos e permitindo redirecionamento
                     fetch(this.scriptUrl, {
                         method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        redirect: 'follow', 
+                        headers: {
+                            'Content-Type': 'text/plain;charset=utf-8'
+                        },
                         body: JSON.stringify({ action: 'sync', transactions: this.data.transactions })
-                    }).catch(err => console.log('Erro de ligação com a base de dados', err));
+                    }).catch(err => console.log('Erro de sincronização na nuvem:', err));
                 }
             },
 
