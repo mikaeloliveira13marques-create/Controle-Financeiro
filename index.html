@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0A0D14">
     <title>Meu Controle Financeiro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -19,13 +19,16 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        primary: '#4f46e5',
-                        primary_dark: '#4338ca',
-                        success: '#10b981',
-                        danger: '#ef4444',
-                        invest: '#8b5cf6',
-                        surface: '#ffffff',
-                        background: '#f8fafc',
+                        primary: '#3B82F6', // Blue 500
+                        primary_dark: '#2563EB',
+                        accent: '#8B5CF6', // Purple 500
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        invest: '#8B5CF6',
+                        dark: '#0A0D14', // Deep background
+                        surface: '#111622', // Card background
+                        surface_hover: '#1A2130',
+                        border_color: '#1F2532'
                     }
                 }
             }
@@ -34,128 +37,160 @@
     <style>
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #1F2532; border-radius: 4px; }
         
-        body { background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        input, select, textarea { font-size: 16px !important; }
+        body { background-color: #0A0D14; color: #E2E8F0; -webkit-tap-highlight-color: transparent; }
+        input, select, textarea { font-size: 16px !important; color-scheme: dark; }
         
         .card { 
-            background: white; 
-            border-radius: 1rem; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.025); 
-            border: 1px solid #f1f5f9; 
-            padding: 1.25rem; 
+            background: rgba(17, 22, 34, 0.7); 
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 1.25rem; 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            padding: 1.25rem;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .premium-gradient {
+            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 50%, #8B5CF6 100%);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .premium-gradient::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .glass-panel {
+            background: rgba(10, 13, 20, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
         
         .fab:active { transform: scale(0.95); }
-        .view-section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .view-section { display: none; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .view-section.active { display: block; }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Customizing Inputs for Dark Theme */
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; cursor: pointer; }
     </style>
 </head>
-<body class="text-slate-800 antialiased overflow-hidden h-screen flex flex-col">
+<body class="antialiased overflow-hidden h-screen flex flex-col relative">
+
+    <!-- Efeito de fundo brilhante suave -->
+    <div class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none z-0"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent/10 blur-[120px] pointer-events-none z-0"></div>
 
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 w-11/12 max-w-md pointer-events-none"></div>
 
-    <div id="confirm-dialog" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] hidden items-center justify-center transition-opacity opacity-0">
-        <div class="bg-white rounded-2xl p-6 w-11/12 max-w-sm mx-auto shadow-2xl transform scale-95 transition-transform duration-200" id="confirm-content">
-            <div class="w-12 h-12 rounded-full bg-red-100 text-danger flex items-center justify-center text-xl mb-4 mx-auto">
+    <div id="confirm-dialog" class="fixed inset-0 bg-dark/80 backdrop-blur-md z-[90] hidden items-center justify-center transition-opacity opacity-0">
+        <div class="bg-surface border border-border_color rounded-2xl p-6 w-11/12 max-w-sm mx-auto shadow-2xl transform scale-95 transition-transform duration-200 relative overflow-hidden" id="confirm-content">
+            <div class="w-12 h-12 rounded-full bg-danger/10 text-danger flex items-center justify-center text-xl mb-4 mx-auto border border-danger/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
-            <h3 class="text-lg font-bold text-center text-slate-800 mb-2">Atenção</h3>
-            <p id="confirm-message" class="text-slate-600 text-center mb-6 text-sm">Tem certeza?</p>
+            <h3 class="text-lg font-bold text-center text-white mb-2">Atenção</h3>
+            <p id="confirm-message" class="text-slate-400 text-center mb-6 text-sm">Tem a certeza?</p>
             <div class="flex gap-3">
-                <button onclick="app.closeConfirm()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition">Cancelar</button>
-                <button id="confirm-btn-yes" class="flex-1 py-2.5 bg-danger hover:bg-red-600 text-white font-medium rounded-xl transition">Confirmar</button>
+                <button onclick="app.closeConfirm()" class="flex-1 py-2.5 bg-surface_hover hover:bg-[#232C3E] text-slate-300 font-medium rounded-xl transition border border-border_color">Cancelar</button>
+                <button id="confirm-btn-yes" class="flex-1 py-2.5 bg-danger hover:bg-red-500 text-white font-medium rounded-xl transition shadow-[0_0_15px_rgba(239,68,68,0.3)]">Confirmar</button>
             </div>
         </div>
     </div>
 
     <!-- Category Manager Modal -->
-    <div id="category-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[95] hidden items-center justify-center transition-opacity opacity-0">
-        <div class="bg-white rounded-2xl p-5 w-11/12 max-w-sm mx-auto shadow-2xl transform scale-95 transition-transform duration-200" id="category-content">
+    <div id="category-modal" class="fixed inset-0 bg-dark/80 backdrop-blur-md z-[95] hidden items-center justify-center transition-opacity opacity-0">
+        <div class="bg-surface border border-border_color rounded-2xl p-5 w-11/12 max-w-sm mx-auto shadow-2xl transform scale-95 transition-transform duration-200 relative" id="category-content">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-slate-800">Gerenciar Categorias</h3>
-                <button onclick="app.fecharCategorias()" class="text-slate-400 hover:text-slate-700 w-8 h-8 rounded-full flex items-center justify-center transition bg-slate-100"><i class="fa-solid fa-xmark"></i></button>
+                <h3 class="text-lg font-bold text-white">Gerir Categorias</h3>
+                <button onclick="app.fecharCategorias()" class="text-slate-400 hover:text-white w-8 h-8 rounded-full flex items-center justify-center transition bg-surface_hover"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="flex gap-2 mb-4">
-                <input type="text" id="nova-categoria-input" class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-primary" placeholder="Nova categoria...">
-                <button onclick="app.adicionarCategoria()" class="bg-primary text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-primary_dark transition"><i class="fa-solid fa-plus"></i></button>
+                <input type="text" id="nova-categoria-input" class="flex-1 px-3 py-2 bg-dark border border-border_color text-white rounded-xl text-sm outline-none focus:border-primary focus:shadow-[0_0_10px_rgba(59,130,246,0.2)] transition" placeholder="Nova categoria...">
+                <button onclick="app.adicionarCategoria()" class="bg-primary text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-primary_dark transition shadow-[0_0_10px_rgba(59,130,246,0.3)]"><i class="fa-solid fa-plus"></i></button>
             </div>
             <ul id="lista-categorias" class="max-h-60 overflow-y-auto space-y-2 pr-1"></ul>
         </div>
     </div>
 
     <!-- PIN Screen -->
-    <div id="pin-screen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center transition-opacity duration-300 px-4">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center">
-            <div class="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-                <i class="fa-solid fa-wallet"></i>
+    <div id="pin-screen" class="fixed inset-0 bg-dark z-50 flex items-center justify-center transition-opacity duration-300 px-4">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-dark to-dark"></div>
+        <div class="card p-8 shadow-2xl w-full max-w-sm text-center relative z-10 border-white/10 bg-surface/80 backdrop-blur-xl">
+            <div class="w-20 h-20 bg-primary/20 text-primary border border-primary/30 rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl shadow-[0_0_20px_rgba(59,130,246,0.2)] transform rotate-3">
+                <i class="fa-solid fa-wallet -rotate-3"></i>
             </div>
-            <h2 class="text-2xl font-bold mb-2">Meu Controle</h2>
-            <p class="text-slate-500 mb-8 text-sm">Digite seu PIN para acessar.</p>
+            <h2 class="text-2xl font-bold mb-2 text-white">NexFinance</h2>
+            <p class="text-slate-400 mb-8 text-sm">Digite o seu PIN para aceder.</p>
             <div class="relative max-w-[200px] mx-auto mb-6">
-                <input type="password" id="pin-input" class="w-full text-center text-3xl tracking-[0.5em] p-4 border-2 border-slate-200 rounded-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all font-mono" placeholder="••••" maxlength="6" inputmode="numeric" pattern="[0-9]*">
+                <input type="password" id="pin-input" class="w-full text-center text-3xl tracking-[0.5em] p-4 bg-dark border border-border_color text-white rounded-2xl focus:outline-none focus:border-primary focus:shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all font-mono" placeholder="••••" maxlength="6" inputmode="numeric" pattern="[0-9]*">
             </div>
-            <button onclick="app.login()" class="w-full bg-primary text-white font-bold py-4 rounded-2xl hover:bg-primary_dark active:scale-[0.98] transition-all shadow-lg shadow-primary/30">
-                Acessar Sistema
+            <button onclick="app.login()" class="w-full bg-primary text-white font-bold py-4 rounded-2xl hover:bg-primary_dark active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(59,130,246,0.4)]">
+                Aceder ao Sistema
             </button>
             <p id="pin-error" class="text-danger text-sm mt-4 hidden font-medium">PIN incorreto. (Padrão: 1234)</p>
         </div>
     </div>
 
-    <div id="app-container" class="hidden h-full w-full relative">
-        <div id="sidebar-overlay" onclick="app.toggleMenu()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 hidden md:hidden transition-opacity opacity-0"></div>
+    <div id="app-container" class="hidden h-full w-full relative z-10">
+        <div id="sidebar-overlay" onclick="app.toggleMenu()" class="fixed inset-0 bg-dark/60 backdrop-blur-sm z-30 hidden md:hidden transition-opacity opacity-0"></div>
 
-        <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex flex-col z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 h-full">
-            <div class="p-5 flex items-center justify-between border-b border-slate-100">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 glass-panel border-r border-border_color flex flex-col z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 h-full">
+            <div class="p-5 flex items-center justify-between border-b border-border_color">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-lg"><i class="fa-solid fa-wallet"></i></div>
-                    <span class="font-bold text-xl tracking-tight">Financeiro</span>
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-[0_0_15px_rgba(139,92,246,0.4)]"><i class="fa-solid fa-wallet"></i></div>
+                    <span class="font-bold text-xl text-white tracking-tight">NexFinance</span>
                 </div>
-                <button onclick="app.toggleMenu()" class="md:hidden text-slate-400 hover:text-slate-600 p-2 text-xl"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="app.toggleMenu()" class="md:hidden text-slate-400 hover:text-white p-2 text-xl"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto" id="main-nav">
-                <a href="#" onclick="app.navigate('dashboard')" data-view="dashboard" class="nav-item active flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary rounded-xl font-medium transition"><i class="fa-solid fa-house w-5 text-center"></i> Dashboard</a>
-                <a href="#" onclick="app.navigate('receitas')" data-view="receitas" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 rounded-xl font-medium transition"><i class="fa-solid fa-arrow-up w-5 text-center"></i> Receitas</a>
-                <a href="#" onclick="app.navigate('despesas')" data-view="despesas" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 rounded-xl font-medium transition"><i class="fa-solid fa-arrow-down w-5 text-center"></i> Despesas</a>
-                <a href="#" onclick="app.navigate('cartoes')" data-view="cartoes" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 rounded-xl font-medium transition"><i class="fa-regular fa-credit-card w-5 text-center"></i> Cartões</a>
-                <a href="#" onclick="app.navigate('investimentos')" data-view="investimentos" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 rounded-xl font-medium transition"><i class="fa-solid fa-chart-line w-5 text-center"></i> Investimentos</a>
+                <a href="#" onclick="app.navigate('dashboard')" data-view="dashboard" class="nav-item active flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary border border-primary/20 rounded-xl font-medium transition"><i class="fa-solid fa-house w-5 text-center"></i> Dashboard</a>
+                <a href="#" onclick="app.navigate('receitas')" data-view="receitas" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-arrow-up w-5 text-center"></i> Receitas</a>
+                <a href="#" onclick="app.navigate('despesas')" data-view="despesas" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-arrow-down w-5 text-center"></i> Despesas</a>
+                <a href="#" onclick="app.navigate('cartoes')" data-view="cartoes" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-regular fa-credit-card w-5 text-center"></i> Cartões</a>
+                <a href="#" onclick="app.navigate('investimentos')" data-view="investimentos" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-chart-line w-5 text-center"></i> Investimentos</a>
             </nav>
             
-            <div class="p-4 border-t border-slate-100 space-y-2 bg-slate-50/50">
-                <button onclick="app.exportBackup()" class="w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:shadow-sm rounded-xl transition text-left text-sm font-medium"><i class="fa-solid fa-download w-5 text-center"></i> Exportar Backup</button>
-                <button onclick="document.getElementById('import-file').click()" class="w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:shadow-sm rounded-xl transition text-left text-sm font-medium"><i class="fa-solid fa-upload w-5 text-center"></i> Importar Backup</button>
+            <div class="p-4 border-t border-border_color space-y-2 bg-dark/30">
+                <button onclick="app.exportBackup()" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-surface_hover rounded-xl transition text-left text-sm font-medium"><i class="fa-solid fa-download w-5 text-center"></i> Exportar Backup</button>
+                <button onclick="document.getElementById('import-file').click()" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-surface_hover rounded-xl transition text-left text-sm font-medium"><i class="fa-solid fa-upload w-5 text-center"></i> Importar Backup</button>
                 <input type="file" id="import-file" class="hidden" accept=".json" onchange="app.importBackup(event)">
-                <button onclick="app.logout()" class="w-full flex items-center gap-3 px-4 py-3 text-danger hover:bg-red-50 rounded-xl transition text-left text-sm font-medium mt-2"><i class="fa-solid fa-lock w-5 text-center"></i> Bloquear Sistema</button>
+                <button onclick="app.logout()" class="w-full flex items-center gap-3 px-4 py-3 text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 rounded-xl transition text-left text-sm font-medium mt-2"><i class="fa-solid fa-lock w-5 text-center"></i> Bloquear Sistema</button>
             </div>
         </aside>
 
-        <main class="flex flex-col h-full overflow-hidden absolute inset-0 md:left-72 bg-background">
-            <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-20">
+        <main class="flex flex-col h-full overflow-hidden absolute inset-0 md:left-72">
+            <header class="glass-panel border-b border-border_color sticky top-0 z-20">
                 <div class="flex items-center justify-between p-4 pb-2 md:py-5 md:px-8">
                     <div class="flex items-center gap-3">
-                        <button onclick="app.toggleMenu()" class="md:hidden text-slate-500 hover:text-slate-800 p-1 text-xl"><i class="fa-solid fa-bars"></i></button>
+                        <button onclick="app.toggleMenu()" class="md:hidden text-slate-300 hover:text-white p-1 text-xl"><i class="fa-solid fa-bars"></i></button>
                         <div>
-                            <h1 class="text-xl md:text-2xl font-bold text-slate-800 leading-tight" id="header-title">Visão Geral 👋</h1>
+                            <h1 class="text-xl md:text-2xl font-bold text-white leading-tight" id="header-title">Visão Geral 👋</h1>
                         </div>
                     </div>
-                    <button onclick="app.openModal()" class="hidden md:flex bg-primary hover:bg-primary_dark text-white font-medium rounded-xl text-sm px-5 py-2.5 transition shadow-sm items-center gap-2">
-                        <i class="fa-solid fa-plus"></i> Novo Lançamento
+                    <button onclick="app.openModal()" class="hidden md:flex bg-primary hover:bg-primary_dark text-white font-medium rounded-xl text-sm px-5 py-2.5 transition shadow-[0_0_15px_rgba(59,130,246,0.3)] items-center gap-2 border border-primary/50">
+                        <i class="fa-solid fa-plus"></i> Novo Registo
                     </button>
                 </div>
 
                 <div class="flex items-center gap-2 px-4 pb-4 md:px-8 w-full overflow-x-auto hide-scroll">
-                    <select id="filter-year" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm md:text-base rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block p-2.5 font-medium outline-none" onchange="app.renderCurrentView()">
+                    <select id="filter-year" class="bg-surface border border-border_color text-slate-200 text-sm md:text-base rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block p-2.5 font-medium outline-none transition" onchange="app.renderCurrentView()">
                         <option value="2026">2026</option>
                         <option value="2027">2027</option>
                     </select>
-                    <select id="filter-month" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm md:text-base rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block p-2.5 font-medium outline-none flex-1 min-w-[120px]" onchange="app.renderCurrentView()">
+                    <select id="filter-month" class="bg-surface border border-border_color text-slate-200 text-sm md:text-base rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block p-2.5 font-medium outline-none flex-1 min-w-[120px] transition" onchange="app.renderCurrentView()">
                         <option value="0">Janeiro</option>
                         <option value="1">Fevereiro</option>
                         <option value="2">Março</option>
@@ -177,228 +212,249 @@
                 
                 <!-- VIEW: DASHBOARD -->
                 <div id="view-dashboard" class="view-section active max-w-7xl mx-auto space-y-6">
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
-                        <div class="card flex flex-col justify-center p-4">
-                            <div class="text-slate-500 text-xs md:text-sm font-medium mb-2 flex justify-between items-center">Receitas (Mês) <div class="w-7 h-7 rounded-full bg-emerald-50 text-success flex items-center justify-center text-xs"><i class="fa-solid fa-arrow-up"></i></div></div>
-                            <div class="text-lg md:text-2xl font-bold text-slate-800 break-words" id="dash-receitas">R$ 0,00</div>
-                        </div>
-                        <div class="card flex flex-col justify-center p-4">
-                            <div class="text-slate-500 text-xs md:text-sm font-medium mb-2 flex justify-between items-center">Despesas (Mês) <div class="w-7 h-7 rounded-full bg-red-50 text-danger flex items-center justify-center text-xs"><i class="fa-solid fa-arrow-down"></i></div></div>
-                            <div class="text-lg md:text-2xl font-bold text-slate-800 break-words" id="dash-despesas">R$ 0,00</div>
-                        </div>
-                        <div class="card flex flex-col justify-center p-4 col-span-2 lg:col-span-1">
-                            <div class="text-slate-500 text-xs md:text-sm font-medium mb-2 flex justify-between items-center">Saldo Atual <div class="w-7 h-7 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-xs"><i class="fa-solid fa-building-columns"></i></div></div>
-                            <div class="text-2xl font-bold text-slate-800" id="dash-saldo">R$ 0,00</div>
-                            <div id="dash-saldo-label" class="text-xs text-slate-400 mt-1 font-medium"></div>
-                        </div>
-                        <div class="card flex flex-col justify-center p-4 col-span-2 lg:col-span-1 bg-slate-900 border-none relative overflow-hidden">
-                            <div class="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-                            <div class="relative z-10">
-                                <div class="text-slate-300 text-xs md:text-sm font-medium mb-2 flex justify-between items-center">Fatura Cartão <i class="fa-brands fa-cc-mastercard text-xl text-slate-300"></i></div>
-                                <div class="text-2xl font-bold text-white mb-2" id="dash-cartao">R$ 0,00</div>
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                        <!-- Saldo Card (Premium) -->
+                        <div class="card premium-gradient flex flex-col justify-center p-6 col-span-2 shadow-[0_10px_30px_rgba(59,130,246,0.2)]">
+                            <div class="text-white/80 text-sm font-medium mb-1 flex justify-between items-center">
+                                Saldo Disponível <div class="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-xs"><i class="fa-solid fa-building-columns"></i></div>
                             </div>
+                            <div class="text-4xl font-black text-white drop-shadow-md tracking-tight my-2" id="dash-saldo">R$ 0,00</div>
+                            <div id="dash-saldo-label" class="text-xs text-white/70 font-medium"></div>
+                        </div>
+
+                        <div class="card flex flex-col justify-center p-5 relative overflow-hidden group">
+                            <div class="absolute -right-4 -top-4 w-16 h-16 bg-success/10 rounded-full blur-xl group-hover:bg-success/20 transition"></div>
+                            <div class="text-slate-400 text-xs md:text-sm font-medium mb-2 flex justify-between items-center">Receitas <div class="w-7 h-7 rounded-full bg-success/10 text-success border border-success/20 flex items-center justify-center text-xs"><i class="fa-solid fa-arrow-up"></i></div></div>
+                            <div class="text-lg md:text-2xl font-bold text-white break-words" id="dash-receitas">R$ 0,00</div>
+                        </div>
+
+                        <div class="card flex flex-col justify-center p-5 relative overflow-hidden group">
+                            <div class="absolute -right-4 -top-4 w-16 h-16 bg-danger/10 rounded-full blur-xl group-hover:bg-danger/20 transition"></div>
+                            <div class="text-slate-400 text-xs md:text-sm font-medium mb-2 flex justify-between items-center">Despesas <div class="w-7 h-7 rounded-full bg-danger/10 text-danger border border-danger/20 flex items-center justify-center text-xs"><i class="fa-solid fa-arrow-down"></i></div></div>
+                            <div class="text-lg md:text-2xl font-bold text-white break-words" id="dash-despesas">R$ 0,00</div>
                         </div>
                     </div>
 
-                    <div class="card p-4 md:p-6">
-                        <h3 class="font-bold text-slate-800 mb-4 text-sm md:text-base">Evolução Financeira</h3>
-                        <div class="relative h-48 md:h-64 w-full"><canvas id="mainChart"></canvas></div>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="card p-5 md:p-6 lg:col-span-2">
+                            <h3 class="font-bold text-white mb-4 text-sm md:text-base flex items-center gap-2"><i class="fa-solid fa-chart-simple text-primary"></i> Evolução Financeira</h3>
+                            <div class="relative h-48 md:h-64 w-full"><canvas id="mainChart"></canvas></div>
+                        </div>
+                        
+                        <div class="card flex flex-col justify-between p-6 bg-gradient-to-br from-surface to-dark relative overflow-hidden">
+                            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-accent/5 rounded-full blur-3xl"></div>
+                            <div class="relative z-10">
+                                <div class="text-slate-400 text-sm font-medium mb-2 flex justify-between items-center">Fatura Cartão <i class="fa-brands fa-cc-mastercard text-2xl text-slate-500"></i></div>
+                                <div class="text-3xl font-bold text-white mb-1" id="dash-cartao">R$ 0,00</div>
+                                <div class="text-xs text-slate-500">Estimativa do mês atual</div>
+                            </div>
+                            <button onclick="app.navigate('cartoes')" class="mt-6 w-full py-2.5 bg-surface_hover border border-border_color text-slate-300 rounded-xl text-sm font-bold hover:bg-[#232C3E] hover:text-white transition">Ver Detalhes</button>
+                        </div>
                     </div>
 
-                    <div class="card p-0 overflow-hidden">
-                        <div class="p-4 md:p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h3 class="font-bold text-slate-800 text-sm md:text-base">Últimas Movimentações</h3>
-                            <button onclick="app.navigate('despesas')" class="text-xs font-bold text-primary hover:underline">Ver todas</button>
+                    <div class="card p-0 overflow-hidden border-border_color">
+                        <div class="p-4 md:p-5 border-b border-border_color flex justify-between items-center bg-surface/50">
+                            <h3 class="font-bold text-white text-sm md:text-base">Últimas Movimentações</h3>
+                            <button onclick="app.navigate('despesas')" class="text-xs font-bold text-primary hover:text-primary_dark transition">Ver todas <i class="fa-solid fa-arrow-right ml-1"></i></button>
                         </div>
-                        <div class="divide-y divide-slate-100" id="dash-transactions-list"></div>
+                        <div class="divide-y divide-border_color" id="dash-transactions-list"></div>
                     </div>
                 </div>
 
                 <!-- VIEW: RECEITAS -->
                 <div id="view-receitas" class="view-section max-w-4xl mx-auto space-y-6">
-                    <div class="grid grid-cols-2 gap-3 md:gap-5">
-                        <div class="card flex flex-col justify-center p-5 bg-emerald-50 border-emerald-100">
-                            <div class="text-emerald-700 text-sm font-bold mb-1"><i class="fa-solid fa-arrow-up mr-2"></i>Total de Receitas</div>
-                            <div class="text-2xl md:text-3xl font-black text-emerald-600 break-words" id="rec-total">R$ 0,00</div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="card flex flex-col justify-center p-6 border-success/20 relative overflow-hidden">
+                            <div class="absolute right-0 top-0 w-32 h-32 bg-success/10 blur-3xl"></div>
+                            <div class="text-success text-sm font-bold mb-1 relative z-10"><i class="fa-solid fa-arrow-up mr-2"></i>Total Receitas</div>
+                            <div class="text-2xl md:text-3xl font-black text-white break-words relative z-10" id="rec-total">R$ 0,00</div>
                         </div>
-                        <div class="card flex flex-col justify-center p-5">
-                            <div class="text-slate-500 text-sm font-medium mb-1"><i class="fa-solid fa-star text-yellow-400 mr-2"></i>Principal Entrada</div>
-                            <div class="text-lg md:text-xl font-bold text-slate-800 truncate" id="rec-maior-nome">-</div>
-                            <div class="text-sm text-slate-500 font-medium" id="rec-maior-valor">R$ 0,00</div>
+                        <div class="card flex flex-col justify-center p-6 border-border_color">
+                            <div class="text-slate-400 text-sm font-medium mb-1"><i class="fa-solid fa-star text-yellow-500/80 mr-2"></i>Maior Entrada</div>
+                            <div class="text-lg md:text-xl font-bold text-white truncate" id="rec-maior-nome">-</div>
+                            <div class="text-sm text-success font-medium" id="rec-maior-valor">R$ 0,00</div>
                         </div>
                     </div>
-                    <div class="card p-0 overflow-hidden shadow-sm">
-                        <div class="p-4 border-b border-slate-100 bg-slate-50/50">
-                            <h3 class="font-bold text-slate-800">Histórico de Receitas</h3>
+                    <div class="card p-0 overflow-hidden">
+                        <div class="p-4 border-b border-border_color bg-surface/50">
+                            <h3 class="font-bold text-white">Histórico</h3>
                         </div>
-                        <div class="divide-y divide-slate-100" id="rec-list"></div>
+                        <div class="divide-y divide-border_color" id="rec-list"></div>
                     </div>
                 </div>
 
                 <!-- VIEW: DESPESAS -->
                 <div id="view-despesas" class="view-section max-w-4xl mx-auto space-y-6">
-                    <div class="grid grid-cols-2 gap-3 md:gap-5">
-                        <div class="card flex flex-col justify-center p-5 bg-red-50 border-red-100">
-                            <div class="text-red-700 text-sm font-bold mb-1"><i class="fa-solid fa-arrow-down mr-2"></i>Total de Despesas</div>
-                            <div class="text-2xl md:text-3xl font-black text-red-600 break-words" id="desp-total">R$ 0,00</div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="card flex flex-col justify-center p-6 border-danger/20 relative overflow-hidden">
+                            <div class="absolute right-0 top-0 w-32 h-32 bg-danger/10 blur-3xl"></div>
+                            <div class="text-danger text-sm font-bold mb-1 relative z-10"><i class="fa-solid fa-arrow-down mr-2"></i>Total Despesas</div>
+                            <div class="text-2xl md:text-3xl font-black text-white break-words relative z-10" id="desp-total">R$ 0,00</div>
                         </div>
-                        <div class="card flex flex-col justify-center p-5">
-                            <div class="text-slate-500 text-sm font-medium mb-1"><i class="fa-solid fa-fire text-orange-500 mr-2"></i>Maior Gasto</div>
-                            <div class="text-lg md:text-xl font-bold text-slate-800 truncate" id="desp-maior-nome">-</div>
-                            <div class="text-sm text-slate-500 font-medium" id="desp-maior-valor">R$ 0,00</div>
+                        <div class="card flex flex-col justify-center p-6 border-border_color">
+                            <div class="text-slate-400 text-sm font-medium mb-1"><i class="fa-solid fa-fire text-orange-500/80 mr-2"></i>Maior Gasto</div>
+                            <div class="text-lg md:text-xl font-bold text-white truncate" id="desp-maior-nome">-</div>
+                            <div class="text-sm text-danger font-medium" id="desp-maior-valor">R$ 0,00</div>
                         </div>
                     </div>
-                    <div class="card p-0 overflow-hidden shadow-sm">
-                        <div class="p-4 border-b border-slate-100 bg-slate-50/50">
-                            <h3 class="font-bold text-slate-800">Histórico de Despesas</h3>
+                    <div class="card p-0 overflow-hidden">
+                        <div class="p-4 border-b border-border_color bg-surface/50">
+                            <h3 class="font-bold text-white">Histórico</h3>
                         </div>
-                        <div class="divide-y divide-slate-100" id="desp-list"></div>
+                        <div class="divide-y divide-border_color" id="desp-list"></div>
                     </div>
                 </div>
 
                 <!-- VIEW: CARTÕES -->
                 <div id="view-cartoes" class="view-section max-w-4xl mx-auto space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="card p-6 bg-slate-900 border-none shadow-xl relative overflow-hidden rounded-2xl flex flex-col justify-between min-h-[160px]">
+                        <div class="card p-6 bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700 shadow-xl relative overflow-hidden rounded-2xl flex flex-col justify-between min-h-[160px]">
                             <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
                             <div class="flex justify-between items-start relative z-10">
-                                <span class="text-slate-400 font-medium text-sm tracking-widest">FATURA ATUAL</span>
-                                <i class="fa-brands fa-cc-visa text-3xl text-white opacity-80"></i>
+                                <span class="text-slate-400 font-medium text-sm tracking-widest uppercase">Fatura Atual</span>
+                                <div class="flex gap-2 text-2xl text-slate-500">
+                                    <i class="fa-brands fa-cc-visa"></i>
+                                    <i class="fa-brands fa-cc-mastercard"></i>
+                                </div>
                             </div>
-                            <div class="relative z-10 mt-4">
+                            <div class="relative z-10 mt-6">
                                 <div class="text-4xl font-black text-white" id="cart-total">R$ 0,00</div>
-                                <div class="text-sm text-slate-400 mt-2">Limite estimado consumido</div>
                             </div>
                         </div>
-                        <div class="card flex flex-col justify-center p-5">
-                            <div class="text-slate-500 text-sm font-medium mb-1"><i class="fa-solid fa-bag-shopping text-blue-500 mr-2"></i>Maior Compra no Cartão</div>
-                            <div class="text-lg md:text-xl font-bold text-slate-800 truncate mt-2" id="cart-maior-nome">-</div>
-                            <div class="text-sm text-slate-500 font-medium" id="cart-maior-valor">R$ 0,00</div>
+                        <div class="card flex flex-col justify-center p-6 border-border_color">
+                            <div class="text-slate-400 text-sm font-medium mb-1"><i class="fa-solid fa-bag-shopping text-primary mr-2"></i>Maior Compra</div>
+                            <div class="text-lg md:text-xl font-bold text-white truncate mt-2" id="cart-maior-nome">-</div>
+                            <div class="text-sm text-slate-400 font-medium" id="cart-maior-valor">R$ 0,00</div>
                         </div>
                     </div>
-                    <div class="card p-0 overflow-hidden shadow-sm">
-                        <div class="p-4 border-b border-slate-100 bg-slate-50/50">
-                            <h3 class="font-bold text-slate-800">Compras no Cartão</h3>
+                    <div class="card p-0 overflow-hidden">
+                        <div class="p-4 border-b border-border_color bg-surface/50">
+                            <h3 class="font-bold text-white">Compras no Cartão</h3>
                         </div>
-                        <div class="divide-y divide-slate-100" id="cart-list"></div>
+                        <div class="divide-y divide-border_color" id="cart-list"></div>
                     </div>
                 </div>
 
                 <!-- VIEW: INVESTIMENTOS -->
                 <div id="view-investimentos" class="view-section max-w-4xl mx-auto space-y-6">
-                    <div class="grid grid-cols-2 gap-3 md:gap-5">
-                        <div class="card flex flex-col justify-center p-5 bg-purple-50 border-purple-100">
-                            <div class="text-purple-700 text-sm font-bold mb-1"><i class="fa-solid fa-chart-pie mr-2"></i>Total Investido (Mês)</div>
-                            <div class="text-2xl md:text-3xl font-black text-purple-600 break-words" id="inv-total">R$ 0,00</div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="card flex flex-col justify-center p-6 border-accent/20 relative overflow-hidden">
+                            <div class="absolute right-0 top-0 w-32 h-32 bg-accent/10 blur-3xl"></div>
+                            <div class="text-accent text-sm font-bold mb-1 relative z-10"><i class="fa-solid fa-chart-pie mr-2"></i>Aportes (Mês)</div>
+                            <div class="text-2xl md:text-3xl font-black text-white break-words relative z-10" id="inv-total">R$ 0,00</div>
                         </div>
-                        <div class="card flex flex-col justify-center p-5">
-                            <div class="text-slate-500 text-sm font-medium mb-1"><i class="fa-solid fa-bullseye text-purple-500 mr-2"></i>Principal Aporte</div>
-                            <div class="text-lg md:text-xl font-bold text-slate-800 truncate" id="inv-maior-nome">-</div>
-                            <div class="text-sm text-slate-500 font-medium" id="inv-maior-valor">R$ 0,00</div>
+                        <div class="card flex flex-col justify-center p-6 border-border_color">
+                            <div class="text-slate-400 text-sm font-medium mb-1"><i class="fa-solid fa-bullseye text-accent mr-2"></i>Principal Ativo</div>
+                            <div class="text-lg md:text-xl font-bold text-white truncate" id="inv-maior-nome">-</div>
+                            <div class="text-sm text-accent font-medium" id="inv-maior-valor">R$ 0,00</div>
                         </div>
                     </div>
-                    <div class="card p-0 overflow-hidden shadow-sm">
-                        <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                            <h3 class="font-bold text-slate-800">Histórico de Aportes</h3>
+                    <div class="card p-0 overflow-hidden">
+                        <div class="p-4 border-b border-border_color bg-surface/50">
+                            <h3 class="font-bold text-white">Histórico de Aportes</h3>
                         </div>
-                        <div class="divide-y divide-slate-100" id="inv-list"></div>
+                        <div class="divide-y divide-border_color" id="inv-list"></div>
                     </div>
                 </div>
 
             </div>
             
-            <button onclick="app.openModal()" class="fab md:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-2xl shadow-lg shadow-primary/40 flex items-center justify-center text-2xl z-30 transition-transform">
+            <button onclick="app.openModal()" class="fab md:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-2xl shadow-[0_0_20px_rgba(59,130,246,0.5)] flex items-center justify-center text-2xl z-30 transition-transform">
                 <i class="fa-solid fa-plus"></i>
             </button>
         </main>
     </div>
 
-    <!-- Transaction Modal -->
-    <div id="transaction-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] hidden items-end md:items-center justify-center transition-opacity opacity-0">
-        <div class="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-lg md:mx-4 transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-300 max-h-[90vh] flex flex-col" id="modal-content">
+    <!-- Transaction Modal (Dark Premium) -->
+    <div id="transaction-modal" class="fixed inset-0 bg-dark/80 backdrop-blur-md z-[80] hidden items-end md:items-center justify-center transition-opacity opacity-0">
+        <div class="bg-surface border border-border_color rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-lg md:mx-4 transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-300 max-h-[90vh] flex flex-col relative overflow-hidden" id="modal-content">
             
-            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mt-3 mb-1 md:hidden"></div>
+            <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mt-3 mb-1 md:hidden"></div>
             
-            <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
-                <h3 class="font-bold text-lg text-slate-800" id="modal-title">Novo Lançamento</h3>
-                <button onclick="app.closeModal()" class="text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+            <div class="px-5 py-4 border-b border-border_color flex justify-between items-center shrink-0 bg-surface/50">
+                <h3 class="font-bold text-lg text-white" id="modal-title">Novo Registo</h3>
+                <button onclick="app.closeModal()" class="text-slate-400 hover:text-white bg-surface_hover hover:bg-[#232C3E] w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
-            <div class="p-5 space-y-4 overflow-y-auto grow">
+            <div class="p-5 space-y-5 overflow-y-auto grow">
                 <input type="hidden" id="form-id">
                 
-                <div class="bg-slate-100 p-1 rounded-xl flex gap-1">
-                    <button type="button" onclick="app.setFormType('despesa')" id="btn-type-despesa" class="flex-1 py-2 rounded-lg text-xs md:text-sm font-bold bg-white text-danger shadow-sm transition">Despesa</button>
-                    <button type="button" onclick="app.setFormType('receita')" id="btn-type-receita" class="flex-1 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-500 hover:text-slate-700 transition">Receita</button>
-                    <button type="button" onclick="app.setFormType('investimento')" id="btn-type-investimento" class="flex-1 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-500 hover:text-slate-700 transition">Investir</button>
+                <div class="bg-dark p-1 rounded-xl flex gap-1 border border-border_color">
+                    <button type="button" onclick="app.setFormType('despesa')" id="btn-type-despesa" class="flex-1 py-2 rounded-lg text-xs md:text-sm font-bold bg-surface border border-danger/30 text-danger shadow-[0_0_10px_rgba(239,68,68,0.1)] transition">Despesa</button>
+                    <button type="button" onclick="app.setFormType('receita')" id="btn-type-receita" class="flex-1 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-400 hover:text-white transition">Receita</button>
+                    <button type="button" onclick="app.setFormType('investimento')" id="btn-type-investimento" class="flex-1 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-400 hover:text-white transition">Investir</button>
                     <input type="hidden" id="form-type" value="despesa">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Descrição</label>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Descrição</label>
                     <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-pen"></i></div>
-                        <input type="text" id="form-descricao" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary focus:border-primary outline-none transition" placeholder="Ex: Supermercado">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-pen"></i></div>
+                        <input type="text" id="form-descricao" class="w-full pl-10 pr-4 py-3 bg-dark border border-border_color rounded-xl text-white focus:bg-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none transition" placeholder="Ex: Supermercado">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Valor (Total)</label>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Valor (Total)</label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-medium">R$</div>
-                            <input type="number" step="0.01" id="form-valor" class="w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary focus:border-primary outline-none transition font-medium" placeholder="0,00" inputmode="decimal">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 font-medium">R$</div>
+                            <input type="number" step="0.01" id="form-valor" class="w-full pl-10 pr-3 py-3 bg-dark border border-border_color rounded-xl text-white font-bold focus:bg-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none transition" placeholder="0,00" inputmode="decimal">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Data</label>
-                        <input type="date" id="form-data" class="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary focus:border-primary outline-none transition text-slate-700">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Data</label>
+                        <input type="date" id="form-data" class="w-full px-3 py-3 bg-dark border border-border_color rounded-xl text-white focus:bg-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none transition">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Categoria</label>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Categoria</label>
                     <div class="flex gap-2">
                         <div class="relative flex-1">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-tag"></i></div>
-                            <select id="form-categoria" class="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary focus:border-primary outline-none transition appearance-none">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-tag"></i></div>
+                            <select id="form-categoria" class="w-full pl-10 pr-10 py-3 bg-dark border border-border_color rounded-xl text-white focus:bg-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none transition appearance-none">
                             </select>
-                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-chevron-down text-xs"></i></div>
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-chevron-down text-xs"></i></div>
                         </div>
-                        <button type="button" onclick="app.gerenciarCategorias()" class="w-12 h-12 bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-200 hover:text-primary rounded-xl flex items-center justify-center transition shrink-0 shadow-sm" title="Gerenciar Categorias">
+                        <button type="button" onclick="app.gerenciarCategorias()" class="w-[50px] h-[50px] bg-dark border border-border_color text-slate-400 hover:bg-surface_hover hover:text-white hover:border-primary/50 rounded-xl flex items-center justify-center transition shrink-0" title="Gerir Categorias">
                             <i class="fa-solid fa-gear"></i>
                         </button>
                     </div>
                 </div>
 
                 <!-- Credit Card Options -->
-                <div id="cartao-container" class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col gap-3 cursor-pointer" onclick="document.getElementById('form-cartao').click()">
+                <div id="cartao-container" class="mt-2 p-4 bg-dark border border-border_color rounded-xl flex flex-col gap-3 cursor-pointer hover:bg-surface_hover transition" onclick="document.getElementById('form-cartao').click()">
                     <div class="flex items-center gap-3">
-                        <input type="checkbox" id="form-cartao" class="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer" onclick="event.stopPropagation(); app.toggleCartaoOpcoes()">
+                        <div class="relative flex items-center">
+                            <input type="checkbox" id="form-cartao" class="w-5 h-5 rounded border-slate-600 bg-surface text-primary focus:ring-primary/50 focus:ring-offset-dark cursor-pointer appearance-none checked:bg-primary checked:border-primary transition" onclick="event.stopPropagation(); app.toggleCartaoOpcoes()">
+                            <i class="fa-solid fa-check absolute text-white text-[10px] left-[5px] pointer-events-none opacity-0 transition-opacity" id="cartao-check-icon"></i>
+                        </div>
+                        <style>#form-cartao:checked + #cartao-check-icon { opacity: 1; }</style>
                         <div>
-                            <p class="text-sm font-bold text-slate-700">Compra no Cartão de Crédito</p>
-                            <p class="text-xs text-slate-500">Adiciona ao limite da fatura e permite parcelamento.</p>
+                            <p class="text-sm font-bold text-white">Compra com Cartão</p>
+                            <p class="text-xs text-slate-500">Adiciona à fatura e permite parcelas</p>
                         </div>
                     </div>
                     
-                    <div id="cartao-opcoes" class="hidden grid-cols-1 md:grid-cols-3 gap-3 w-full mt-1 pt-3 border-t border-slate-200" onclick="event.stopPropagation()">
+                    <div id="cartao-opcoes" class="hidden grid-cols-1 md:grid-cols-3 gap-3 w-full mt-2 pt-4 border-t border-border_color" onclick="event.stopPropagation()">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Banco</label>
-                            <select id="form-banco" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none">
+                            <select id="form-banco" class="w-full px-3 py-2 bg-surface border border-border_color rounded-lg text-white text-sm outline-none">
                                 <option value="Nubank">Nubank</option>
                                 <option value="Santander">Santander</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bandeira</label>
-                            <select id="form-bandeira" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none">
+                            <select id="form-bandeira" class="w-full px-3 py-2 bg-surface border border-border_color rounded-lg text-white text-sm outline-none">
                                 <option value="Mastercard">Mastercard</option>
                                 <option value="Visa">Visa</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Parcelas</label>
-                            <select id="form-parcelas" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-primary">
+                            <select id="form-parcelas" class="w-full px-3 py-2 bg-surface border border-border_color rounded-lg text-white text-sm outline-none focus:border-primary">
                                 <option value="1">1x (À vista)</option>
                                 <option value="2">2x</option>
                                 <option value="3">3x</option>
@@ -417,20 +473,24 @@
                 </div>
             </div>
             
-            <div class="p-5 border-t border-slate-100 bg-white shrink-0 grid grid-cols-2 gap-3 pb-8 md:pb-5">
-                <button onclick="app.closeModal()" class="py-3.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition">Cancelar</button>
-                <button onclick="app.saveTransaction()" class="py-3.5 text-sm font-bold bg-primary text-white hover:bg-primary_dark rounded-xl transition shadow-md shadow-primary/20">Salvar</button>
+            <div class="p-5 border-t border-border_color bg-surface shrink-0 grid grid-cols-2 gap-3 pb-8 md:pb-5">
+                <button onclick="app.closeModal()" class="py-3.5 text-sm font-bold text-slate-300 bg-surface_hover hover:bg-[#232C3E] border border-border_color rounded-xl transition">Cancelar</button>
+                <button onclick="app.saveTransaction()" class="py-3.5 text-sm font-bold bg-primary text-white hover:bg-primary_dark rounded-xl transition shadow-[0_0_15px_rgba(59,130,246,0.3)]">Salvar Registo</button>
             </div>
         </div>
     </div>
 
     <script>
+        // Configuração Global do Chart.js para o tema Dark
+        Chart.defaults.color = '#64748B';
+        Chart.defaults.font.family = 'Inter';
+
         const app = {
             data: { transactions: [], config: { pin: '1234' } },
             chartInstance: null,
             confirmCallback: null,
             currentView: 'dashboard',
-            scriptUrl: 'https://script.google.com/macros/s/AKfycbwVvfphQTfYiftJS-Fpr1N5ziScCWHUchEdjVMzuHG2bbumcQMt5nxMeSt16VEWgv45/exec', // <--- Insira a URL copiada do Apps Script aqui
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbwVvfphQTfYiftJS-Fpr1N5ziScCWHUchEdjVMzuHG2bbumcQMt5nxMeSt16VEWgv45/exec', // <--- INSIRA A URL AQUI
 
             async init() {
                 await this.loadData();
@@ -451,15 +511,16 @@
                 }
             },
 
-            // --- Custom UI Utilities ---
             showToast(message, type = 'success') {
                 const container = document.getElementById('toast-container');
                 const toast = document.createElement('div');
-                const bgClass = type === 'success' ? 'bg-slate-800' : 'bg-red-600';
-                const icon = type === 'success' ? 'fa-check-circle text-emerald-400' : 'fa-circle-exclamation text-white';
                 
-                toast.className = `${bgClass} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transform transition-all duration-300 translate-y-[-100%] opacity-0`;
-                toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> <span class="font-medium text-sm">${message}</span>`;
+                const bgClass = type === 'success' ? 'bg-surface border-success/30' : 'bg-surface border-danger/30';
+                const icon = type === 'success' ? 'fa-check-circle text-success' : 'fa-circle-exclamation text-danger';
+                const shadow = type === 'success' ? 'shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'shadow-[0_0_15px_rgba(239,68,68,0.15)]';
+                
+                toast.className = `${bgClass} border ${shadow} text-white px-4 py-3 rounded-xl flex items-center gap-3 transform transition-all duration-300 translate-y-[-100%] opacity-0`;
+                toast.innerHTML = `<i class="fa-solid ${icon} text-lg drop-shadow-md"></i> <span class="font-medium text-sm">${message}</span>`;
                 container.appendChild(toast);
                 
                 requestAnimationFrame(() => toast.classList.remove('translate-y-[-100%]', 'opacity-0'));
@@ -495,7 +556,6 @@
                 setTimeout(() => { dialog.classList.add('hidden'); dialog.classList.remove('flex'); this.confirmCallback = null; }, 200);
             },
 
-            // --- Gerenciador de Categorias ---
             gerenciarCategorias() {
                 this.renderListaCategorias();
                 const modal = document.getElementById('category-modal');
@@ -518,9 +578,9 @@
                 lista.innerHTML = '';
                 this.data.config.categorias[tipo].forEach((cat, index) => {
                     lista.innerHTML += `
-                        <li class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
-                            <span class="text-sm font-medium text-slate-700">${cat}</span>
-                            <button onclick="app.removerCategoria(${index})" class="text-danger hover:bg-red-50 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>
+                        <li class="flex justify-between items-center p-3 bg-dark rounded-xl border border-border_color">
+                            <span class="text-sm font-medium text-slate-200">${cat}</span>
+                            <button onclick="app.removerCategoria(${index})" class="text-danger hover:bg-danger/10 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>
                         </li>`;
                 });
             },
@@ -544,32 +604,26 @@
                 });
             },
 
-            // --- Utils & Navegação ---
             async loadData() { 
                 try {
-                    // Tenta puxar da nuvem primeiro
                     const response = await fetch(this.scriptUrl);
                     if(response.ok) {
                         this.data = await response.json();
-                        localStorage.setItem('meuControleSPA', JSON.stringify(this.data)); // atualiza o cache
+                        localStorage.setItem('meuControleSPA', JSON.stringify(this.data));
                     }
                 } catch(e) {
-                    // Fallback offline
                     const stored = localStorage.getItem('meuControleSPA'); 
                     if (stored) this.data = JSON.parse(stored);
                 }
             },
 
             saveData() { 
-                // Salva localmente para responsividade imediata
                 localStorage.setItem('meuControleSPA', JSON.stringify(this.data)); 
-                
-                // Dispara sincronização com Google Sheets em background
                 if (this.scriptUrl && this.scriptUrl !== 'COLE_AQUI_A_URL_DO_APPS_SCRIPT') {
                     fetch(this.scriptUrl, {
                         method: 'POST',
                         body: JSON.stringify({ action: 'sync', transactions: this.data.transactions })
-                    }).catch(err => console.log('Erro de conexão com o banco', err));
+                    }).catch(err => console.log('Erro de ligação com a base de dados', err));
                 }
             },
 
@@ -588,10 +642,12 @@
                 } else {
                     document.getElementById('pin-error').classList.remove('hidden');
                     const input = document.getElementById('pin-input');
-                    input.classList.add('translate-x-2');
+                    input.classList.add('translate-x-2', 'border-danger', 'shadow-[0_0_15px_rgba(239,68,68,0.3)]');
                     setTimeout(() => input.classList.replace('translate-x-2', '-translate-x-2'), 100);
                     setTimeout(() => input.classList.replace('-translate-x-2', 'translate-x-2'), 200);
-                    setTimeout(() => input.classList.replace('translate-x-2', 'translate-x-0'), 300);
+                    setTimeout(() => {
+                        input.classList.remove('translate-x-2', 'border-danger', 'shadow-[0_0_15px_rgba(239,68,68,0.3)]');
+                    }, 300);
                 }
             },
             logout() { location.reload(); },
@@ -619,7 +675,6 @@
             formatCurrency(val) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val); },
             formatDate(d) { const [y, m, day] = d.split('-'); return `${day}/${m}/${y}`; },
 
-            // Helper para avançar meses garantindo que o dia não passe do final do mês
             shiftMonth(dateStr, numMonths) {
                 let [y, m, d] = dateStr.split('-').map(Number);
                 m += numMonths;
@@ -633,11 +688,11 @@
                 this.currentView = viewId;
                 
                 document.querySelectorAll('#main-nav .nav-item').forEach(el => {
-                    if (el.dataset.view === viewId) el.className = 'nav-item active flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary rounded-xl font-medium transition';
-                    else el.className = 'nav-item flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-slate-50 rounded-xl font-medium transition';
+                    if (el.dataset.view === viewId) el.className = 'nav-item active flex items-center gap-3 px-4 py-3 bg-primary/10 border border-primary/20 text-primary rounded-xl font-medium transition shadow-[0_0_10px_rgba(59,130,246,0.1)]';
+                    else el.className = 'nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover border border-transparent rounded-xl font-medium transition';
                 });
 
-                const titles = { 'dashboard': 'Visão Geral 👋', 'receitas': 'Minhas Receitas 💰', 'despesas': 'Minhas Despesas 💸', 'cartoes': 'Cartões de Crédito 💳', 'investimentos': 'Meus Investimentos 📈' };
+                const titles = { 'dashboard': 'Visão Geral 👋', 'receitas': 'Receitas 💰', 'despesas': 'Despesas 💸', 'cartoes': 'Cartões 💳', 'investimentos': 'Investimentos 📈' };
                 document.getElementById('header-title').innerText = titles[viewId];
 
                 document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -710,16 +765,33 @@
                 
                 const ctx = document.getElementById('mainChart').getContext('2d');
                 if (this.chartInstance) this.chartInstance.destroy();
+                
+                // Gradientes para os gráficos
+                const gradientRec = ctx.createLinearGradient(0, 0, 0, 300);
+                gradientRec.addColorStop(0, 'rgba(16, 185, 129, 0.8)');
+                gradientRec.addColorStop(1, 'rgba(16, 185, 129, 0.1)');
+                
+                const gradientDesp = ctx.createLinearGradient(0, 0, 0, 300);
+                gradientDesp.addColorStop(0, 'rgba(239, 68, 68, 0.8)');
+                gradientDesp.addColorStop(1, 'rgba(239, 68, 68, 0.1)');
+
                 this.chartInstance = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: ['Mês Atual'],
                         datasets: [
-                            { label: 'Receitas', data: [rec], backgroundColor: '#10b981', borderRadius: 6, barPercentage: 0.5 },
-                            { label: 'Despesas', data: [desp], backgroundColor: '#ef4444', borderRadius: 6, barPercentage: 0.5 }
+                            { label: 'Receitas', data: [rec], backgroundColor: gradientRec, borderRadius: 8, barPercentage: 0.4 },
+                            { label: 'Despesas', data: [desp], backgroundColor: gradientDesp, borderRadius: 8, barPercentage: 0.4 }
                         ]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true, border: {display:false} }, x: { border: {display:false}, grid: {display:false}, ticks: {display:false} } } }
+                    options: { 
+                        responsive: true, maintainAspectRatio: false, 
+                        plugins: { legend: { position: 'bottom', labels: { color: '#E2E8F0' } } }, 
+                        scales: { 
+                            y: { beginAtZero: true, grid: { color: '#1F2532' }, ticks: { color: '#94A3B8' }, border: {display:false} }, 
+                            x: { grid: { display: false }, ticks: { color: '#94A3B8' }, border: {display:false} } 
+                        } 
+                    }
                 });
 
                 this.renderListUI(trans.slice(0, 5), 'dash-transactions-list');
@@ -778,7 +850,7 @@
                 container.innerHTML = '';
 
                 if (list.length === 0) {
-                    container.innerHTML = `<div class="text-center py-8 text-slate-500 font-medium">Nenhum lançamento encontrado.</div>`;
+                    container.innerHTML = `<div class="text-center py-10 text-slate-500 font-medium text-sm">Sem registos no período.</div>`;
                     return;
                 }
 
@@ -786,34 +858,34 @@
                     const isReceita = t.tipo === 'receita';
                     const isInv = t.tipo === 'investimento';
                     
-                    let valClass = 'text-slate-800'; let signal = '-'; let icon = 'fa-receipt'; let iconColor = 'bg-slate-100 text-slate-500';
+                    let valClass = 'text-white'; let signal = '-'; let icon = 'fa-receipt'; let iconColor = 'bg-slate-800 text-slate-300 border border-slate-700';
 
-                    if (isReceita) { valClass = 'text-success'; signal = '+'; icon = 'fa-arrow-down'; iconColor = 'bg-emerald-100 text-emerald-600'; } 
-                    else if (isInv) { valClass = 'text-invest'; signal = ''; icon = 'fa-chart-line'; iconColor = 'bg-purple-100 text-purple-600'; } 
+                    if (isReceita) { valClass = 'text-success'; signal = '+'; icon = 'fa-arrow-down'; iconColor = 'bg-success/10 text-success border border-success/20'; } 
+                    else if (isInv) { valClass = 'text-accent'; signal = ''; icon = 'fa-chart-line'; iconColor = 'bg-accent/10 text-accent border border-accent/20'; } 
                     else {
-                        if(t.categoria === 'Mercado') { icon = 'fa-basket-shopping'; iconColor = 'bg-orange-100 text-orange-600'; }
-                        else if(t.categoria === 'Transporte') { icon = 'fa-car'; iconColor = 'bg-blue-100 text-blue-600'; }
-                        else if(t.categoria === 'Lazer') { icon = 'fa-ticket'; iconColor = 'bg-pink-100 text-pink-600'; }
-                        if(t.cartao) { icon = 'fa-credit-card'; iconColor = 'bg-slate-800 text-white'; }
+                        if(t.categoria === 'Mercado') { icon = 'fa-basket-shopping'; iconColor = 'bg-orange-500/10 text-orange-400 border border-orange-500/20'; }
+                        else if(t.categoria === 'Transporte') { icon = 'fa-car'; iconColor = 'bg-blue-500/10 text-blue-400 border border-blue-500/20'; }
+                        else if(t.categoria === 'Lazer') { icon = 'fa-ticket'; iconColor = 'bg-pink-500/10 text-pink-400 border border-pink-500/20'; }
+                        if(t.cartao) { icon = 'fa-credit-card'; iconColor = 'bg-slate-700 text-white border border-slate-600'; }
                     }
                     
                     let cartaoBadge = '';
                     if (t.cartao && t.banco && t.bandeira) {
                         const iconBandeira = t.bandeira === 'Visa' ? 'fa-cc-visa' : 'fa-cc-mastercard';
-                        cartaoBadge = `<span class="w-1 h-1 bg-slate-300 rounded-full"></span>
-                                       <span class="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase">${t.banco}</span>
-                                       <i class="fa-brands ${iconBandeira} text-primary text-sm ml-0.5"></i>`;
+                        cartaoBadge = `<span class="w-1 h-1 bg-slate-600 rounded-full"></span>
+                                       <span class="text-[10px] bg-dark text-slate-300 border border-border_color px-1.5 py-0.5 rounded font-bold uppercase">${t.banco}</span>
+                                       <i class="fa-brands ${iconBandeira} text-slate-300 text-sm ml-0.5"></i>`;
                     }
 
                     container.innerHTML += `
-                        <div class="flex items-center justify-between p-4 hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer group" onclick="app.editTransaction('${t.id}')">
-                            <div class="flex items-center gap-3 overflow-hidden">
-                                <div class="w-10 h-10 rounded-full ${iconColor} flex items-center justify-center shrink-0 shadow-sm"><i class="fa-solid ${icon}"></i></div>
+                        <div class="flex items-center justify-between p-4 hover:bg-surface_hover active:bg-[#232C3E] transition cursor-pointer group" onclick="app.editTransaction('${t.id}')">
+                            <div class="flex items-center gap-4 overflow-hidden">
+                                <div class="w-11 h-11 rounded-xl ${iconColor} flex items-center justify-center shrink-0 shadow-inner"><i class="fa-solid ${icon}"></i></div>
                                 <div class="truncate">
-                                    <div class="font-bold text-sm md:text-base text-slate-800 truncate">${t.descricao}</div>
-                                    <div class="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                    <div class="font-bold text-sm md:text-base text-slate-100 truncate">${t.descricao}</div>
+                                    <div class="text-xs text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
                                         <span>${this.formatDate(t.data)}</span>
-                                        <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+                                        <span class="w-1 h-1 bg-slate-600 rounded-full"></span>
                                         <span class="truncate">${t.categoria}</span>
                                         ${cartaoBadge}
                                     </div>
@@ -822,8 +894,8 @@
                             <div class="text-right shrink-0 ml-2">
                                 <div class="font-bold text-sm md:text-base ${valClass}">${signal} ${this.formatCurrency(t.valor)}</div>
                                 <div class="flex justify-end gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button class="p-1 text-slate-400 hover:text-primary"><i class="fa-solid fa-pen text-xs"></i></button>
-                                    <button onclick="event.stopPropagation(); app.deleteTransaction('${t.id}')" class="p-1 text-slate-400 hover:text-danger"><i class="fa-solid fa-trash text-xs"></i></button>
+                                    <button class="p-1.5 text-slate-500 hover:text-primary"><i class="fa-solid fa-pen text-xs"></i></button>
+                                    <button onclick="event.stopPropagation(); app.deleteTransaction('${t.id}')" class="p-1.5 text-slate-500 hover:text-danger"><i class="fa-solid fa-trash text-xs"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -861,7 +933,7 @@
                 document.getElementById('form-type').value = type;
                 const btns = { despesa: document.getElementById('btn-type-despesa'), receita: document.getElementById('btn-type-receita'), investimento: document.getElementById('btn-type-investimento') };
                 
-                Object.values(btns).forEach(btn => btn.className = 'flex-1 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-500 hover:text-slate-700 transition');
+                Object.values(btns).forEach(btn => btn.className = 'flex-1 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-400 hover:text-white transition bg-transparent border border-transparent');
                 
                 const cartaoContainer = document.getElementById('cartao-container');
                 const catSelect = document.getElementById('form-categoria');
@@ -870,14 +942,14 @@
                 this.data.config.categorias[type].forEach(c => catSelect.innerHTML += `<option value="${c}">${c}</option>`);
                 
                 if (type === 'despesa') {
-                    btns.despesa.className = 'flex-1 py-2 rounded-lg text-xs md:text-sm font-bold bg-white text-danger shadow-sm transition';
+                    btns.despesa.className = 'flex-1 py-2 rounded-lg text-xs md:text-sm font-bold bg-danger/10 border border-danger/30 text-danger shadow-[0_0_10px_rgba(239,68,68,0.1)] transition';
                     cartaoContainer.classList.remove('hidden'); cartaoContainer.classList.add('flex');
                 } else if (type === 'receita') {
-                    btns.receita.className = 'flex-1 py-2 rounded-lg text-xs md:text-sm font-bold bg-white text-success shadow-sm transition';
+                    btns.receita.className = 'flex-1 py-2 rounded-lg text-xs md:text-sm font-bold bg-success/10 border border-success/30 text-success shadow-[0_0_10px_rgba(16,185,129,0.1)] transition';
                     cartaoContainer.classList.add('hidden'); cartaoContainer.classList.remove('flex'); document.getElementById('form-cartao').checked = false;
                     this.toggleCartaoOpcoes();
                 } else if (type === 'investimento') {
-                    btns.investimento.className = 'flex-1 py-2 rounded-lg text-xs md:text-sm font-bold bg-white text-invest shadow-sm transition';
+                    btns.investimento.className = 'flex-1 py-2 rounded-lg text-xs md:text-sm font-bold bg-accent/10 border border-accent/30 text-accent shadow-[0_0_10px_rgba(139,92,246,0.1)] transition';
                     cartaoContainer.classList.add('hidden'); cartaoContainer.classList.remove('flex'); document.getElementById('form-cartao').checked = false;
                     this.toggleCartaoOpcoes();
                 }
@@ -889,7 +961,6 @@
                 document.getElementById('form-valor').value = '';
                 document.getElementById('form-data').value = new Date().toISOString().split('T')[0];
                 
-                // Opções de Cartão
                 document.getElementById('form-cartao').checked = false;
                 document.getElementById('form-banco').value = 'Nubank';
                 document.getElementById('form-bandeira').value = 'Mastercard';
@@ -903,7 +974,7 @@
                 if(this.currentView === 'investimentos') openType = 'investimento';
                 
                 this.setFormType(openType);
-                document.getElementById('modal-title').innerText = 'Novo Lançamento';
+                document.getElementById('modal-title').innerText = 'Novo Registo';
             },
 
             saveTransaction() {
@@ -923,22 +994,19 @@
                 if (valor <= 0) return this.showToast("O valor deve ser maior que zero.", "error");
 
                 if (id) {
-                    // Edição (Atualiza apenas o lançamento que foi clicado, não interfere em outras parcelas)
                     const transaction = { id, tipo, descricao, valor, data: dataStr, categoria, cartao, banco, bandeira };
                     const idx = this.data.transactions.findIndex(t => t.id === id);
                     if (idx >= 0) { this.data.transactions[idx] = transaction; this.showToast("Atualizado!"); }
                 } else {
-                    // Inserção Nova
                     if (cartao && parcelas > 1) {
-                        // Rateio de parcelamento
                         const valParcela = Math.floor((valor / parcelas) * 100) / 100;
                         const remainder = Math.round((valor - (valParcela * parcelas)) * 100) / 100;
 
                         for (let i = 0; i < parcelas; i++) {
                             let pValor = valParcela;
-                            if (i === 0) pValor = Math.round((pValor + remainder) * 100) / 100; // Soma centavos excedentes na 1ª parcela
+                            if (i === 0) pValor = Math.round((pValor + remainder) * 100) / 100;
                             
-                            const pData = this.shiftMonth(dataStr, i); // Calcula a data jogando o mês pra frente
+                            const pData = this.shiftMonth(dataStr, i);
                             const pDesc = `${descricao} (${i + 1}/${parcelas})`;
                             const pId = Date.now().toString() + '-' + i;
                             
@@ -948,10 +1016,9 @@
                         }
                         this.showToast(`Adicionado em ${parcelas} parcelas!`);
                     } else {
-                        // Inserção simples (à vista ou dinheiro)
                         const transaction = { id: Date.now().toString(), tipo, descricao, valor, data: dataStr, categoria, cartao, banco, bandeira };
                         this.data.transactions.push(transaction);
-                        this.showToast("Adicionado!");
+                        this.showToast("Registo Adicionado!");
                     }
                 }
 
@@ -962,7 +1029,7 @@
                 const t = this.data.transactions.find(x => x.id === id);
                 if (!t) return;
                 this.openModal();
-                document.getElementById('modal-title').innerText = 'Editar Lançamento';
+                document.getElementById('modal-title').innerText = 'Editar Registo';
                 this.setFormType(t.tipo);
                 document.getElementById('form-id').value = t.id;
                 document.getElementById('form-descricao').value = t.descricao;
@@ -976,7 +1043,6 @@
                     document.getElementById('form-bandeira').value = t.bandeira || 'Mastercard';
                 }
                 
-                // Desabilita campo de parcelas na edição (pois as parcelas já viraram lançamentos independentes)
                 document.getElementById('form-parcelas').value = '1';
                 document.getElementById('form-parcelas').disabled = true;
                 
@@ -984,9 +1050,9 @@
             },
 
             deleteTransaction(id) {
-                this.showConfirm("Deseja excluir este registro?", () => {
+                this.showConfirm("Deseja eliminar este registo?", () => {
                     this.data.transactions = this.data.transactions.filter(t => t.id !== id);
-                    this.saveData(); this.renderCurrentView(); this.showToast("Excluído.");
+                    this.saveData(); this.renderCurrentView(); this.showToast("Eliminado.");
                 });
             },
 
@@ -994,7 +1060,7 @@
                 try {
                     const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.data));
                     const node = document.createElement('a');
-                    node.setAttribute("href", str); node.setAttribute("download", "meu_controle_backup.json");
+                    node.setAttribute("href", str); node.setAttribute("download", "nexfinance_backup.json");
                     document.body.appendChild(node); node.click(); node.remove();
                     this.toggleMenu(true); this.showToast("Backup exportado!");
                 } catch(e) { this.showToast("Erro", "error"); }
@@ -1007,9 +1073,9 @@
                     try {
                         const imported = JSON.parse(ev.target.result);
                         this.showConfirm("Substituir dados atuais?", () => {
-                            this.data = imported; this.saveData(); this.initCategorias(); this.renderCurrentView(); this.toggleMenu(true); this.showToast("Restaurado!");
+                            this.data = imported; this.saveData(); this.initCategorias(); this.renderCurrentView(); this.toggleMenu(true); this.showToast("Restaurado com sucesso!");
                         });
-                    } catch (err) { this.showToast("Inválido", "error"); }
+                    } catch (err) { this.showToast("Ficheiro Inválido", "error"); }
                     e.target.value = '';
                 };
                 reader.readAsText(file);
@@ -1020,7 +1086,7 @@
                 this.data.transactions = [
                     { id: '1', tipo: 'receita', descricao: 'Salário Mensal', valor: 8500, data: `${year}-${month}-05`, categoria: 'Salário', cartao: false },
                     { id: '2', tipo: 'despesa', descricao: 'Supermercado', valor: 650, data: `${year}-${month}-12`, categoria: 'Mercado', cartao: true, banco: 'Nubank', bandeira: 'Mastercard' },
-                    { id: '3', tipo: 'despesa', descricao: 'Aluguel', valor: 2000, data: `${year}-${month}-10`, categoria: 'Moradia', cartao: false },
+                    { id: '3', tipo: 'despesa', descricao: 'Renda', valor: 2000, data: `${year}-${month}-10`, categoria: 'Moradia', cartao: false },
                     { id: '4', tipo: 'investimento', descricao: 'CDB Liquidez', valor: 500, data: `${year}-${month}-15`, categoria: 'Renda Fixa', cartao: false }
                 ];
                 this.saveData();
