@@ -132,12 +132,12 @@
             <h2 class="text-2xl font-bold mb-2 text-white">NexFinance</h2>
             <p class="text-slate-400 mb-8 text-sm">Digite o seu PIN para aceder.</p>
             <div class="relative max-w-[200px] mx-auto mb-6">
-                <input type="password" id="pin-input" class="w-full text-center text-3xl tracking-[0.5em] p-4 bg-dark border border-border_color text-white rounded-2xl focus:outline-none focus:border-primary focus:shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all font-mono" placeholder="••••" maxlength="6" inputmode="numeric" pattern="[0-9]*">
+                <input type="password" id="pin-input" aria-label="PIN de acesso" autocomplete="current-password" class="w-full text-center text-2xl tracking-[0.3em] p-4 bg-dark border border-border_color text-white rounded-2xl focus:outline-none focus:border-primary focus:shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all font-mono" placeholder="••••••" maxlength="64">
             </div>
-            <button onclick="app.login()" class="w-full bg-primary text-white font-bold py-4 rounded-2xl hover:bg-primary_dark active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(59,130,246,0.4)]">
+            <button id="pin-btn" onclick="app.login()" class="w-full bg-primary text-white font-bold py-4 rounded-2xl hover:bg-primary_dark active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(59,130,246,0.4)] disabled:opacity-60 disabled:cursor-wait">
                 Aceder ao Sistema
             </button>
-            <p id="pin-error" class="text-danger text-sm mt-4 hidden font-medium">PIN incorreto. (Padrão: 1234)</p>
+            <p id="pin-error" class="text-danger text-sm mt-4 hidden font-medium" role="alert">PIN incorreto.</p>
         </div>
     </div>
 
@@ -178,6 +178,10 @@
                             <h1 class="text-xl md:text-2xl font-bold text-white leading-tight" id="header-title">Visão Geral 👋</h1>
                         </div>
                     </div>
+                    <button id="sync-status" onclick="app.syncNow()" aria-live="polite" class="ml-auto md:mr-3 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border_color bg-surface text-xs font-medium text-slate-300 hover:bg-surface_hover transition" title="Estado da sincronização">
+                        <span id="sync-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                        <span id="sync-text">Conectando…</span>
+                    </button>
                     <button onclick="app.openModal()" class="hidden md:flex bg-primary hover:bg-primary_dark text-white font-medium rounded-xl text-sm px-5 py-2.5 transition shadow-[0_0_15px_rgba(59,130,246,0.3)] items-center gap-2 border border-primary/50">
                         <i class="fa-solid fa-plus"></i> Novo Registo
                     </button>
@@ -483,41 +487,108 @@
         Chart.defaults.font.family = 'Inter';
 
         const app = {
-            data: { transactions: [], config: { pin: '1234' } },
+            data: { transactions: [], config: {} },
             chartInstance: null,
             confirmCallback: null,
             currentView: 'dashboard',
-            scriptUrl: 'https://script.google.com/macros/s/AKfycbzJM9NxwzoqXPp4oROJb71NQveqwkhErXHNeYa5T10j3LmKVVr0Fv3Ne-OGc5ewCDnj/exec', 
+            // URL da implantação do Apps Script (apps-script/Code.gs). Para testar com outra
+            // implantação, defina localStorage 'nexfinance_api_url' no console do navegador.
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbzJM9NxwzoqXPp4oROJb71NQveqwkhErXHNeYa5T10j3LmKVVr0Fv3Ne-OGc5ewCDnj/exec',
+            CACHE_KEY: 'meuControleSPA',
+            QUEUE_KEY: 'nexfinance_queue',
+            DEFAULT_CATEGORIAS: {
+                despesa: ['Mercado', 'Lazer', 'Transporte', 'Moradia', 'Saúde', 'Outros'],
+                receita: ['Salário', 'Freelance', 'Rendimento', 'Venda', 'Outros'],
+                investimento: ['Renda Fixa', 'Ações', 'Fundos Imobiliários', 'Criptomoedas', 'Reserva de Emergência']
+            },
+            token: null,
+            dataSource: null,      // 'server' após uma leitura válida da API
+            queue: [],             // operações pendentes (FIFO, persistidas no dispositivo)
+            syncing: false,
+            syncState: 'idle',
+            retryTimer: null,
+            retryDelay: 5000,
+            notifyOnSynced: false,
 
-            async init() {
-                await this.loadData();
+            init() {
+                const override = this.storageGet('nexfinance_api_url');
+                if (override && /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(override)) this.scriptUrl = override;
+                this.loadCache();
+                this.queue = this.loadQueue();
                 this.initCategorias();
                 this.setDefaultDate();
-                if (this.data.transactions.length === 0) this.createDummyData();
-                this.setFormType('despesa'); 
+                this.setFormType('despesa');
+                this.updateSyncUI();
+                window.addEventListener('online', () => this.processQueue());
+                window.addEventListener('beforeunload', (e) => {
+                    if (this.queue.length && !this.leaving) { e.preventDefault(); e.returnValue = ''; }
+                });
             },
 
             initCategorias() {
-                if (!this.data.config.categorias) {
-                    this.data.config.categorias = {
-                        despesa: ['Mercado', 'Lazer', 'Transporte', 'Moradia', 'Saúde', 'Outros'],
-                        receita: ['Salário', 'Freelance', 'Rendimento', 'Venda', 'Outros'],
-                        investimento: ['Renda Fixa', 'Ações', 'Fundos Imobiliários', 'Criptomoedas', 'Reserva de Emergência']
-                    };
-                    this.saveData();
+                if (!this.validCategorias(this.data.config.categorias)) {
+                    this.data.config.categorias = JSON.parse(JSON.stringify(this.DEFAULT_CATEGORIAS));
                 }
+            },
+
+            // ---------- Utilitários de segurança e armazenamento ----------
+            esc(v) {
+                return String(v ?? '').replace(/[&<>"'`]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c]));
+            },
+            storageGet(key) { try { return localStorage.getItem(key); } catch (e) { return null; } },
+            storageSet(key, val) { try { localStorage.setItem(key, val); } catch (e) { console.warn('Armazenamento local indisponível', e); } },
+
+            validCategorias(c) {
+                return !!c && ['despesa', 'receita', 'investimento'].every(t => Array.isArray(c[t]) && c[t].length > 0 && c[t].every(x => typeof x === 'string' && x.trim()));
+            },
+
+            /** Valida e normaliza um lançamento. Retorna null se for inválido. */
+            normalizeTransaction(t) {
+                if (!t || typeof t !== 'object') return null;
+                const id = String(t.id ?? '').trim();
+                const valor = typeof t.valor === 'number' ? t.valor : parseFloat(String(t.valor ?? '').replace(',', '.'));
+                const data = String(t.data ?? '').slice(0, 10);
+                if (!/^[A-Za-z0-9_.-]{1,64}$/.test(id)) return null;
+                if (!['receita', 'despesa', 'investimento'].includes(t.tipo)) return null;
+                if (!isFinite(valor) || valor <= 0 || valor > 1e9) return null;
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || isNaN(new Date(data + 'T00:00:00'))) return null;
+                const descricao = String(t.descricao ?? '').trim().slice(0, 200);
+                if (!descricao) return null;
+                const cartao = t.cartao === true || t.cartao === 'TRUE' || t.cartao === 'true';
+                return {
+                    id, tipo: t.tipo, descricao, valor: Math.round(valor * 100) / 100, data,
+                    categoria: String(t.categoria ?? '').slice(0, 60), cartao,
+                    banco: cartao ? String(t.banco ?? '').slice(0, 40) : '',
+                    bandeira: cartao ? String(t.bandeira ?? '').slice(0, 40) : ''
+                };
+            },
+
+            loadCache() {
+                try {
+                    const stored = JSON.parse(this.storageGet(this.CACHE_KEY) || 'null');
+                    if (stored && Array.isArray(stored.transactions)) {
+                        this.data.transactions = stored.transactions.map(t => this.normalizeTransaction(t)).filter(Boolean);
+                        if (stored.config && this.validCategorias(stored.config.categorias)) this.data.config.categorias = stored.config.categorias;
+                    }
+                } catch (e) { console.warn('Cache local inválido; ignorado.', e); }
+            },
+
+            saveCache() {
+                this.storageSet(this.CACHE_KEY, JSON.stringify({ transactions: this.data.transactions, config: { categorias: this.data.config.categorias } }));
             },
 
             showToast(message, type = 'success') {
                 const container = document.getElementById('toast-container');
                 const toast = document.createElement('div');
-                
+
                 const bgClass = type === 'success' ? 'bg-surface border-success/30' : 'bg-surface border-danger/30';
                 const icon = type === 'success' ? 'fa-check-circle text-success' : 'fa-circle-exclamation text-danger';
                 const shadow = type === 'success' ? 'shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'shadow-[0_0_15px_rgba(239,68,68,0.15)]';
-                
+
                 toast.className = `${bgClass} border ${shadow} text-white px-4 py-3 rounded-xl flex items-center gap-3 transform transition-all duration-300 translate-y-[-100%] opacity-0`;
-                toast.innerHTML = `<i class="fa-solid ${icon} text-lg drop-shadow-md"></i> <span class="font-medium text-sm">${message}</span>`;
+                toast.setAttribute('role', type === 'success' ? 'status' : 'alert');
+                toast.innerHTML = `<i class="fa-solid ${icon} text-lg drop-shadow-md"></i> <span class="font-medium text-sm"></span>`;
+                toast.querySelector('span').textContent = message;
                 container.appendChild(toast);
                 
                 requestAnimationFrame(() => toast.classList.remove('translate-y-[-100%]', 'opacity-0'));
@@ -573,77 +644,253 @@
                 const tipo = document.getElementById('form-type').value;
                 const lista = document.getElementById('lista-categorias');
                 lista.innerHTML = '';
-                this.data.config.categorias[tipo].forEach((cat, index) => {
-                    lista.innerHTML += `
+                lista.innerHTML = this.data.config.categorias[tipo].map((cat, index) => `
                         <li class="flex justify-between items-center p-3 bg-dark rounded-xl border border-border_color">
-                            <span class="text-sm font-medium text-slate-200">${cat}</span>
-                            <button onclick="app.removerCategoria(${index})" class="text-danger hover:bg-danger/10 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>
-                        </li>`;
-                });
+                            <span class="text-sm font-medium text-slate-200">${this.esc(cat)}</span>
+                            <button onclick="app.removerCategoria(${index})" aria-label="Remover categoria" class="text-danger hover:bg-danger/10 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>
+                        </li>`).join('');
             },
 
             adicionarCategoria() {
                 const input = document.getElementById('nova-categoria-input');
-                const valor = input.value.trim();
+                const valor = input.value.trim().slice(0, 60);
                 if (!valor) return;
                 const tipo = document.getElementById('form-type').value;
-                if (this.data.config.categorias[tipo].includes(valor)) return this.showToast('Categoria já existe!', 'error');
-                
+                if (this.data.config.categorias[tipo].some(c => c.toLowerCase() === valor.toLowerCase())) return this.showToast('Categoria já existe!', 'error');
+
                 this.data.config.categorias[tipo].push(valor);
-                this.saveData(); input.value = ''; this.renderListaCategorias();
+                this.saveConfig(); input.value = ''; this.renderListaCategorias();
             },
 
             removerCategoria(index) {
                 const tipo = document.getElementById('form-type').value;
+                if (this.data.config.categorias[tipo].length <= 1) return this.showToast('Mantenha ao menos uma categoria.', 'error');
                 this.showConfirm('Remover esta categoria?', () => {
                     this.data.config.categorias[tipo].splice(index, 1);
-                    this.saveData(); this.renderListaCategorias();
+                    this.saveConfig(); this.renderListaCategorias();
                 });
             },
 
-            async loadData() { 
+            // ---------- Comunicação com a API ----------
+            apiError(code, message) { const e = new Error(message); e.code = code; return e; },
+
+            async api(action, payload = {}) {
+                if (!/^https:\/\//.test(this.scriptUrl)) throw this.apiError('CONFIG', 'URL da API não configurada.');
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 30000);
+                let res;
                 try {
-                    const response = await fetch(this.scriptUrl);
-                    if(response.ok) {
-                        this.data = await response.json();
-                        localStorage.setItem('meuControleSPA', JSON.stringify(this.data));
+                    // text/plain evita o preflight CORS, que o Apps Script não suporta.
+                    res = await fetch(this.scriptUrl, {
+                        method: 'POST', redirect: 'follow', signal: ctrl.signal,
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ ...payload, action, token: this.token })
+                    });
+                } catch (e) {
+                    throw this.apiError('NETWORK', 'Sem conexão com o servidor.');
+                } finally { clearTimeout(timer); }
+                if (!res.ok) throw this.apiError('NETWORK', `Servidor respondeu HTTP ${res.status}.`);
+                let body;
+                try { body = await res.json(); } catch (e) { throw this.apiError('INVALID', 'Resposta inválida do servidor.'); }
+                if (!body || typeof body !== 'object') throw this.apiError('INVALID', 'Resposta inválida do servidor.');
+                if (body.ok !== true) throw this.apiError(body.code || 'SERVER', body.error || 'Erro no servidor.');
+                return body;
+            },
+
+            /** Lê todos os dados do servidor. Só substitui os dados locais após uma resposta válida. */
+            async loadData() {
+                this.setSyncState('loading');
+                try {
+                    const body = await this.api('list');
+                    if (!Array.isArray(body.transactions)) throw this.apiError('INVALID', 'Resposta da API sem lista de lançamentos.');
+                    const valid = body.transactions.map(t => this.normalizeTransaction(t)).filter(Boolean);
+                    const ignored = body.transactions.length - valid.length;
+                    this.data.transactions = valid;
+                    this.applyQueueLocally(); // alterações ainda não enviadas continuam visíveis
+                    const serverCats = body.config && body.config.categorias;
+                    if (this.validCategorias(serverCats)) {
+                        if (!this.queue.some(op => op.action === 'saveConfig')) this.data.config.categorias = serverCats;
+                    } else {
+                        this.saveConfig(); // migração: envia as categorias deste dispositivo para a planilha
                     }
-                } catch(e) {
-                    const stored = localStorage.getItem('meuControleSPA'); 
-                    if (stored) this.data = JSON.parse(stored);
+                    this.dataSource = 'server';
+                    this.saveCache();
+                    if (ignored > 0) this.showToast(`${ignored} registro(s) com formato inválido na planilha foram ignorados. Use o menu NexFinance > Verificar dados.`, 'error');
+                    this.setSyncState(this.queue.length ? 'pending' : 'synced');
+                    this.renderCurrentView();
+                    this.processQueue();
+                    return true;
+                } catch (e) {
+                    if (e.code === 'AUTH') { this.requireLogin(); return false; }
+                    this.setSyncState('error', e.message);
+                    this.showToast(`Não foi possível carregar da nuvem: ${e.message} Exibindo dados salvos neste dispositivo.`, 'error');
+                    return false;
                 }
             },
 
-            saveData() { 
-                localStorage.setItem('meuControleSPA', JSON.stringify(this.data)); 
-                if (this.scriptUrl && this.scriptUrl !== 'COLE_AQUI_A_URL_DO_APPS_SCRIPT') {
-                    // Atualizado para contornar o bloqueio CORS enviando sem cabeçalhos complexos e permitindo redirecionamento
-                    fetch(this.scriptUrl, {
-                        method: 'POST',
-                        redirect: 'follow', 
-                        headers: {
-                            'Content-Type': 'text/plain;charset=utf-8'
-                        },
-                        body: JSON.stringify({ action: 'sync', transactions: this.data.transactions })
-                    }).catch(err => console.log('Erro de sincronização na nuvem:', err));
+            // ---------- Fila de sincronização (ordem garantida, uma requisição por vez) ----------
+            loadQueue() {
+                try { const q = JSON.parse(this.storageGet(this.QUEUE_KEY) || '[]'); return Array.isArray(q) ? q : []; }
+                catch (e) { return []; }
+            },
+            saveQueue() { this.storageSet(this.QUEUE_KEY, JSON.stringify(this.queue)); },
+
+            enqueue(action, payload) {
+                if (action === 'saveConfig') {
+                    // Mantém apenas a configuração mais recente que ainda não começou a ser enviada.
+                    const start = this.syncing ? 1 : 0;
+                    this.queue = this.queue.filter((op, i) => i < start || op.action !== 'saveConfig');
+                }
+                this.queue.push({ opId: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), action, payload });
+                this.saveQueue();
+                this.saveCache();
+                this.notifyOnSynced = true;
+                this.setSyncState('pending');
+                this.processQueue();
+            },
+
+            /** Reaplica operações pendentes sobre os dados recém-carregados do servidor. */
+            applyQueueLocally() {
+                this.queue.forEach(op => {
+                    if (op.action === 'upsert') {
+                        op.payload.records.forEach(r => {
+                            const idx = this.data.transactions.findIndex(t => t.id === r.id);
+                            if (idx >= 0) this.data.transactions[idx] = r; else this.data.transactions.push(r);
+                        });
+                    } else if (op.action === 'delete') {
+                        const ids = new Set(op.payload.ids);
+                        this.data.transactions = this.data.transactions.filter(t => !ids.has(t.id));
+                    } else if (op.action === 'saveConfig' && this.validCategorias(op.payload.config.categorias)) {
+                        this.data.config.categorias = op.payload.config.categorias;
+                    }
+                });
+            },
+
+            async processQueue() {
+                if (this.syncing || !this.queue.length) return;
+                if (!this.token) { this.setSyncState('auth'); return; }
+                this.syncing = true;
+                clearTimeout(this.retryTimer);
+                this.setSyncState('saving');
+                try {
+                    while (this.queue.length) {
+                        const op = this.queue[0];
+                        try {
+                            await this.api(op.action, op.payload);
+                        } catch (e) {
+                            if (e.code === 'VALIDATION' || e.code === 'BAD_REQUEST') {
+                                // O servidor recusou a operação: descarta e recarrega o estado real da planilha.
+                                this.queue.shift(); this.saveQueue();
+                                this.showToast(`Alteração recusada pelo servidor: ${e.message}`, 'error');
+                                this.syncing = false;
+                                await this.loadData();
+                                return;
+                            }
+                            throw e;
+                        }
+                        this.queue.shift();
+                        this.saveQueue();
+                    }
+                    this.retryDelay = 5000;
+                    this.setSyncState('synced');
+                    if (this.notifyOnSynced) { this.notifyOnSynced = false; this.showToast('Salvo na nuvem.'); }
+                } catch (e) {
+                    if (e.code === 'AUTH') { this.syncing = false; this.requireLogin(); return; }
+                    this.setSyncState('error', e.message);
+                    this.retryTimer = setTimeout(() => this.processQueue(), this.retryDelay);
+                    this.retryDelay = Math.min(this.retryDelay * 2, 120000);
+                } finally {
+                    this.syncing = false;
                 }
             },
 
-            login() {
-                const pin = document.getElementById('pin-input').value;
-                if (pin === this.data.config.pin) {
+            syncNow() {
+                if (!this.token) return;
+                if (this.queue.length) { this.retryDelay = 5000; this.processQueue(); }
+                else this.loadData();
+            },
+
+            setSyncState(state, detail = '') {
+                this.syncState = state;
+                this.syncDetail = detail;
+                this.updateSyncUI();
+            },
+
+            updateSyncUI() {
+                const dot = document.getElementById('sync-dot');
+                const text = document.getElementById('sync-text');
+                const btn = document.getElementById('sync-status');
+                if (!dot) return;
+                const n = this.queue.length;
+                const map = {
+                    idle: ['bg-slate-500', 'Conectando…'],
+                    loading: ['bg-primary animate-pulse', 'Carregando…'],
+                    saving: ['bg-primary animate-pulse', 'Salvando…'],
+                    pending: ['bg-yellow-400', `${n} pendente${n === 1 ? '' : 's'}`],
+                    synced: ['bg-success', 'Sincronizado'],
+                    error: ['bg-danger', n ? `Erro — ${n} pendente${n === 1 ? '' : 's'}` : 'Erro de conexão'],
+                    auth: ['bg-yellow-400', 'Sessão expirada']
+                };
+                const [cls, label] = map[this.syncState] || map.idle;
+                dot.className = `w-2 h-2 rounded-full ${cls}`;
+                text.textContent = label;
+                btn.title = this.syncDetail ? `${label}: ${this.syncDetail} (toque para tentar novamente)` : label;
+            },
+
+            /** Sessão expirada: volta à tela de PIN sem perder as alterações pendentes. */
+            requireLogin() {
+                this.token = null;
+                this.setSyncState('auth');
+                const screen = document.getElementById('pin-screen');
+                screen.style.display = '';
+                screen.classList.remove('opacity-0', 'pointer-events-none');
+                document.getElementById('pin-input').value = '';
+                const err = document.getElementById('pin-error');
+                err.textContent = 'Sua sessão expirou. Digite o PIN novamente.';
+                err.classList.remove('hidden');
+            },
+
+            saveConfig() {
+                this.enqueue('saveConfig', { config: { categorias: this.data.config.categorias } });
+            },
+
+            async login() {
+                const input = document.getElementById('pin-input');
+                const btn = document.getElementById('pin-btn');
+                const errEl = document.getElementById('pin-error');
+                const pin = input.value;
+                if (!pin) return;
+                btn.disabled = true;
+                const btnText = btn.textContent;
+                btn.textContent = 'Verificando…';
+                errEl.classList.add('hidden');
+                let erro = null;
+                try {
+                    const body = await this.api('login', { pin });
+                    if (typeof body.token !== 'string') throw this.apiError('INVALID', 'Resposta inválida do servidor.');
+                    this.token = body.token;
+                } catch (e) {
+                    erro = e;
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = btnText;
+                }
+
+                if (!erro) {
                     const screen = document.getElementById('pin-screen');
                     screen.classList.add('opacity-0', 'pointer-events-none');
-                    document.getElementById('pin-input').blur();
+                    input.value = '';
+                    input.blur();
 
                     setTimeout(() => {
                         screen.style.display = 'none';
                         document.getElementById('app-container').classList.remove('hidden');
-                        this.navigate('dashboard');
+                        this.navigate(this.currentView || 'dashboard');
                     }, 300);
+                    this.loadData();
                 } else {
-                    document.getElementById('pin-error').classList.remove('hidden');
-                    const input = document.getElementById('pin-input');
+                    errEl.textContent = erro.code === 'BAD_PIN' ? 'PIN incorreto.' : erro.message;
+                    errEl.classList.remove('hidden');
                     input.classList.add('translate-x-2', 'border-danger', 'shadow-[0_0_15px_rgba(239,68,68,0.3)]');
                     setTimeout(() => input.classList.replace('translate-x-2', '-translate-x-2'), 100);
                     setTimeout(() => input.classList.replace('-translate-x-2', 'translate-x-2'), 200);
@@ -652,7 +899,11 @@
                     }, 300);
                 }
             },
-            logout() { location.reload(); },
+            logout() {
+                const sair = () => { if (this.token) this.api('logout').catch(() => {}); this.token = null; this.leaving = true; setTimeout(() => location.reload(), 150); };
+                if (this.queue.length) this.showConfirm(`Há ${this.queue.length} alteração(ões) ainda não enviada(s). Elas ficam guardadas neste dispositivo e serão enviadas no próximo acesso. Bloquear mesmo assim?`, sair);
+                else sair();
+            },
 
             toggleMenu(forceClose = false) {
                 const sidebar = document.getElementById('sidebar');
@@ -855,6 +1106,7 @@
                     return;
                 }
 
+                let html = '';
                 list.forEach(t => {
                     const isReceita = t.tipo === 'receita';
                     const isInv = t.tipo === 'investimento';
@@ -874,20 +1126,20 @@
                     if (t.cartao && t.banco && t.bandeira) {
                         const iconBandeira = t.bandeira === 'Visa' ? 'fa-cc-visa' : 'fa-cc-mastercard';
                         cartaoBadge = `<span class="w-1 h-1 bg-slate-600 rounded-full"></span>
-                                       <span class="text-[10px] bg-dark text-slate-300 border border-border_color px-1.5 py-0.5 rounded font-bold uppercase">${t.banco}</span>
+                                       <span class="text-[10px] bg-dark text-slate-300 border border-border_color px-1.5 py-0.5 rounded font-bold uppercase">${this.esc(t.banco)}</span>
                                        <i class="fa-brands ${iconBandeira} text-slate-300 text-sm ml-0.5"></i>`;
                     }
 
-                    container.innerHTML += `
-                        <div class="flex items-center justify-between p-4 hover:bg-surface_hover active:bg-[#232C3E] transition cursor-pointer group" onclick="app.editTransaction('${t.id}')">
+                    html += `
+                        <div class="flex items-center justify-between p-4 hover:bg-surface_hover active:bg-[#232C3E] transition cursor-pointer group" data-id="${this.esc(t.id)}" onclick="app.editTransaction(this.dataset.id)">
                             <div class="flex items-center gap-4 overflow-hidden">
                                 <div class="w-11 h-11 rounded-xl ${iconColor} flex items-center justify-center shrink-0 shadow-inner"><i class="fa-solid ${icon}"></i></div>
                                 <div class="truncate">
-                                    <div class="font-bold text-sm md:text-base text-slate-100 truncate">${t.descricao}</div>
+                                    <div class="font-bold text-sm md:text-base text-slate-100 truncate">${this.esc(t.descricao)}</div>
                                     <div class="text-xs text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
                                         <span>${this.formatDate(t.data)}</span>
                                         <span class="w-1 h-1 bg-slate-600 rounded-full"></span>
-                                        <span class="truncate">${t.categoria}</span>
+                                        <span class="truncate">${this.esc(t.categoria)}</span>
                                         ${cartaoBadge}
                                     </div>
                                 </div>
@@ -896,12 +1148,13 @@
                                 <div class="font-bold text-sm md:text-base ${valClass}">${signal} ${this.formatCurrency(t.valor)}</div>
                                 <div class="flex justify-end gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button class="p-1.5 text-slate-500 hover:text-primary"><i class="fa-solid fa-pen text-xs"></i></button>
-                                    <button onclick="event.stopPropagation(); app.deleteTransaction('${t.id}')" class="p-1.5 text-slate-500 hover:text-danger"><i class="fa-solid fa-trash text-xs"></i></button>
+                                    <button onclick="event.stopPropagation(); app.deleteTransaction(this.closest('[data-id]').dataset.id)" class="p-1.5 text-slate-500 hover:text-danger"><i class="fa-solid fa-trash text-xs"></i></button>
                                 </div>
                             </div>
                         </div>
                     `;
                 });
+                container.innerHTML = html;
             },
 
             toggleCartaoOpcoes() {
@@ -940,7 +1193,7 @@
                 const catSelect = document.getElementById('form-categoria');
                 catSelect.innerHTML = ''; 
                 
-                this.data.config.categorias[type].forEach(c => catSelect.innerHTML += `<option value="${c}">${c}</option>`);
+                catSelect.innerHTML = this.data.config.categorias[type].map(c => `<option value="${this.esc(c)}">${this.esc(c)}</option>`).join('');
                 
                 if (type === 'despesa') {
                     btns.despesa.className = 'flex-1 py-2 rounded-lg text-xs md:text-sm font-bold bg-danger/10 border border-danger/30 text-danger shadow-[0_0_10px_rgba(239,68,68,0.1)] transition';
@@ -994,36 +1247,36 @@
                 if (!descricao || isNaN(valor) || !dataStr) return this.showToast("Preencha Descrição, Valor e Data.", "error");
                 if (valor <= 0) return this.showToast("O valor deve ser maior que zero.", "error");
 
+                const records = [];
                 if (id) {
-                    const transaction = { id, tipo, descricao, valor, data: dataStr, categoria, cartao, banco, bandeira };
-                    const idx = this.data.transactions.findIndex(t => String(t.id) === String(id));
-                    if (idx >= 0) { this.data.transactions[idx] = transaction; this.showToast("Atualizado com sucesso!"); }
-                } else {
-                    if (cartao && parcelas > 1) {
-                        const valParcela = Math.floor((valor / parcelas) * 100) / 100;
-                        const remainder = Math.round((valor - (valParcela * parcelas)) * 100) / 100;
-
-                        for (let i = 0; i < parcelas; i++) {
-                            let pValor = valParcela;
-                            if (i === 0) pValor = Math.round((pValor + remainder) * 100) / 100;
-                            
-                            const pData = this.shiftMonth(dataStr, i);
-                            const pDesc = `${descricao} (${i + 1}/${parcelas})`;
-                            const pId = Date.now().toString() + '-' + i;
-                            
-                            this.data.transactions.push({
-                                id: pId, tipo, descricao: pDesc, valor: pValor, data: pData, categoria, cartao, banco, bandeira
-                            });
-                        }
-                        this.showToast(`Adicionado em ${parcelas} parcelas!`);
-                    } else {
-                        const transaction = { id: Date.now().toString(), tipo, descricao, valor, data: dataStr, categoria, cartao, banco, bandeira };
-                        this.data.transactions.push(transaction);
-                        this.showToast("Registo Adicionado!");
+                    if (!this.data.transactions.some(t => String(t.id) === String(id))) return this.showToast("Registo não encontrado. Recarregue os dados.", "error");
+                    records.push({ id, tipo, descricao, valor, data: dataStr, categoria, cartao, banco, bandeira });
+                } else if (cartao && parcelas > 1) {
+                    const valParcela = Math.floor((valor / parcelas) * 100) / 100;
+                    const remainder = Math.round((valor - (valParcela * parcelas)) * 100) / 100;
+                    const baseId = Date.now().toString();
+                    for (let i = 0; i < parcelas; i++) {
+                        let pValor = valParcela;
+                        if (i === 0) pValor = Math.round((pValor + remainder) * 100) / 100;
+                        records.push({
+                            id: `${baseId}-${i}`, tipo, descricao: `${descricao} (${i + 1}/${parcelas})`, valor: pValor,
+                            data: this.shiftMonth(dataStr, i), categoria, cartao, banco, bandeira
+                        });
                     }
+                } else {
+                    records.push({ id: Date.now().toString(), tipo, descricao, valor, data: dataStr, categoria, cartao, banco, bandeira });
                 }
 
-                this.saveData(); this.renderCurrentView(); this.closeModal();
+                const clean = records.map(r => this.normalizeTransaction(r));
+                if (clean.some(r => !r)) return this.showToast("Dados inválidos. Verifique descrição, valor e data.", "error");
+
+                clean.forEach(r => {
+                    const idx = this.data.transactions.findIndex(t => t.id === r.id);
+                    if (idx >= 0) this.data.transactions[idx] = r; else this.data.transactions.push(r);
+                });
+                this.enqueue('upsert', { records: clean });
+                this.showToast(id ? 'Atualizado — sincronizando…' : (clean.length > 1 ? `Adicionado em ${clean.length} parcelas — sincronizando…` : 'Registo adicionado — sincronizando…'));
+                this.renderCurrentView(); this.closeModal();
             },
 
             editTransaction(id) {
@@ -1053,15 +1306,15 @@
             deleteTransaction(id) {
                 this.showConfirm("Deseja eliminar este registo?", () => {
                     this.data.transactions = this.data.transactions.filter(t => String(t.id) !== String(id));
-                    this.saveData(); 
+                    this.enqueue('delete', { ids: [String(id)] });
                     this.renderCurrentView(); 
-                    this.showToast("Eliminado com sucesso.");
+                    this.showToast("Eliminado — sincronizando…");
                 });
             },
 
             exportBackup() {
                 try {
-                    const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.data));
+                    const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ transactions: this.data.transactions, config: { categorias: this.data.config.categorias } }));
                     const node = document.createElement('a');
                     node.setAttribute("href", str); node.setAttribute("download", "nexfinance_backup.json");
                     document.body.appendChild(node); node.click(); node.remove();
@@ -1071,28 +1324,31 @@
 
             importBackup(e) {
                 const file = e.target.files[0]; if (!file) return;
+                e.target.value = '';
+                if (file.size > 5 * 1024 * 1024) return this.showToast("Ficheiro demasiado grande (máx. 5 MB).", "error");
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    try {
-                        const imported = JSON.parse(ev.target.result);
-                        this.showConfirm("Substituir dados atuais?", () => {
-                            this.data = imported; this.saveData(); this.initCategorias(); this.renderCurrentView(); this.toggleMenu(true); this.showToast("Restaurado com sucesso!");
+                    let imported;
+                    try { imported = JSON.parse(ev.target.result); } catch (err) { return this.showToast("Ficheiro Inválido", "error"); }
+                    if (!imported || !Array.isArray(imported.transactions)) return this.showToast("Backup inválido: lista de lançamentos ausente.", "error");
+                    const clean = imported.transactions.map(t => this.normalizeTransaction(t));
+                    const invalid = clean.filter(t => !t).length;
+                    if (invalid > 0) return this.showToast(`Backup recusado: ${invalid} registo(s) inválido(s). Nada foi alterado.`, "error");
+                    const ids = new Set(clean.map(t => t.id));
+                    if (ids.size !== clean.length) return this.showToast("Backup recusado: IDs duplicados. Nada foi alterado.", "error");
+                    const cats = imported.config && imported.config.categorias;
+                    const existentes = clean.filter(t => this.data.transactions.some(x => x.id === t.id)).length;
+                    this.showConfirm(`Importar ${clean.length} registo(s)? ${existentes} já existem e serão atualizados; os restantes serão adicionados. Nenhum registo atual será apagado.`, () => {
+                        clean.forEach(r => {
+                            const idx = this.data.transactions.findIndex(t => t.id === r.id);
+                            if (idx >= 0) this.data.transactions[idx] = r; else this.data.transactions.push(r);
                         });
-                    } catch (err) { this.showToast("Ficheiro Inválido", "error"); }
-                    e.target.value = '';
+                        for (let i = 0; i < clean.length; i += 200) this.enqueue('upsert', { records: clean.slice(i, i + 200) });
+                        if (this.validCategorias(cats)) { this.data.config.categorias = cats; this.saveConfig(); }
+                        this.renderCurrentView(); this.toggleMenu(true); this.showToast("Importação registada — sincronizando…");
+                    });
                 };
                 reader.readAsText(file);
-            },
-
-            createDummyData() {
-                const year = new Date().getFullYear(); const month = String(new Date().getMonth() + 1).padStart(2, '0');
-                this.data.transactions = [
-                    { id: '1', tipo: 'receita', descricao: 'Salário Mensal', valor: 8500, data: `${year}-${month}-05`, categoria: 'Salário', cartao: false },
-                    { id: '2', tipo: 'despesa', descricao: 'Supermercado', valor: 650, data: `${year}-${month}-12`, categoria: 'Mercado', cartao: true, banco: 'Nubank', bandeira: 'Mastercard' },
-                    { id: '3', tipo: 'despesa', descricao: 'Renda', valor: 2000, data: `${year}-${month}-10`, categoria: 'Moradia', cartao: false },
-                    { id: '4', tipo: 'investimento', descricao: 'CDB Liquidez', valor: 500, data: `${year}-${month}-15`, categoria: 'Renda Fixa', cartao: false }
-                ];
-                this.saveData();
             }
         };
 
