@@ -563,6 +563,18 @@
                 };
             },
 
+            /** Acrescenta à lista as categorias usadas em lançamentos e ausentes nela. Retorna true se mudou. */
+            mergeUsedCategories() {
+                let changed = false;
+                const cats = this.data.config.categorias;
+                this.data.transactions.forEach(t => {
+                    const c = (t.categoria || '').trim();
+                    const list = cats[t.tipo];
+                    if (c && list && !list.some(x => x.toLowerCase() === c.toLowerCase())) { list.push(c.slice(0, 60)); changed = true; }
+                });
+                return changed;
+            },
+
             loadCache() {
                 try {
                     const stored = JSON.parse(this.storageGet(this.CACHE_KEY) || 'null');
@@ -708,11 +720,11 @@
                     this.data.transactions = valid;
                     this.applyQueueLocally(); // alterações ainda não enviadas continuam visíveis
                     const serverCats = body.config && body.config.categorias;
-                    if (this.validCategorias(serverCats)) {
-                        if (!this.queue.some(op => op.action === 'saveConfig')) this.data.config.categorias = serverCats;
-                    } else {
-                        this.saveConfig(); // migração: envia as categorias deste dispositivo para a planilha
-                    }
+                    const serverHasCats = this.validCategorias(serverCats);
+                    if (serverHasCats && !this.queue.some(op => op.action === 'saveConfig')) this.data.config.categorias = serverCats;
+                    // Migração: envia as categorias deste dispositivo se a planilha ainda não as tem, e inclui
+                    // categorias usadas nos lançamentos que não estejam na lista (evita troca silenciosa ao editar).
+                    if (this.mergeUsedCategories() || !serverHasCats) this.saveConfig();
                     this.dataSource = 'server';
                     this.saveCache();
                     if (ignored > 0) this.showToast(`${ignored} registro(s) com formato inválido na planilha foram ignorados. Use o menu NexFinance > Verificar dados.`, 'error');

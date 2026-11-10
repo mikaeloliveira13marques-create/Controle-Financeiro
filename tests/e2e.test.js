@@ -176,8 +176,22 @@ async function addTransaction(page, { descricao, valor, data = '2026-11-10' }) {
     await login(page);
     await page.waitForFunction(() => app.queue.length === 0 && document.getElementById('sync-text').textContent === 'Sincronizado');
     const cfg = env.book.sheets['Config'].rows;
-    assert.deepEqual(JSON.parse(cfg[1][1]).despesa, ['Mercado', 'Cartões']);
+    assert.deepEqual(JSON.parse(cfg[1][1]).despesa, ['Mercado', 'Cartões', 'Moradia']); // + categoria usada nos lançamentos
     assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem('meuControleSPA'))).config.pin, undefined);
+    await context.close();
+  });
+
+  await t.test('categorias usadas nos lançamentos entram na lista mesmo se a Config já existir', async () => {
+    const sheet = seed();
+    sheet.push([1700000000003, 'despesa', 'Cartão Nubank', 900, d('2026-11-06'), 'Cartões', false, '', '']);
+    const defaults = { despesa: ['Mercado', 'Outros'], receita: ['Salário'], investimento: ['Renda Fixa'] };
+    const { page, env, context } = await setup(browser, { sheets: { 'Página1': sheet, 'Config': [['chave', 'valor', 'atualizadoEm'], ['categorias', JSON.stringify(defaults), '']] } });
+    await login(page);
+    await page.waitForFunction(() => app.queue.length === 0 && document.getElementById('sync-text').textContent === 'Sincronizado');
+    assert.deepEqual(JSON.parse(env.book.sheets['Config'].rows[1][1]).despesa, ['Mercado', 'Outros', 'Moradia', 'Cartões']);
+    // Ao editar, a categoria original é mantida
+    await page.evaluate(() => app.editTransaction('1700000000003'));
+    assert.equal(await page.inputValue('#form-categoria'), 'Cartões');
     await context.close();
   });
 
