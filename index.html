@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0A0D14">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#F5F7FB">
     <title>Meu Controle Financeiro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -25,31 +25,47 @@
                         success: '#10B981',
                         danger: '#EF4444',
                         invest: '#8B5CF6',
-                        dark: '#0A0D14', 
-                        surface: '#111622', 
-                        surface_hover: '#1A2130',
-                        border_color: '#1F2532'
+                        ink: '#0F172A',
+                        dark: '#F3F6FB',
+                        surface: '#FFFFFF',
+                        surface_hover: '#F1F5FB',
+                        border_color: '#E2E8F0'
                     }
                 }
             }
         }
     </script>
     <style>
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #1F2532; border-radius: 4px; }
-        
-        body { background-color: #0A0D14; color: #E2E8F0; -webkit-tap-highlight-color: transparent; }
-        input, select, textarea { font-size: 16px !important; color-scheme: dark; }
-        
-        .card { 
-            background: rgba(17, 22, 34, 0.7); 
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-radius: 1.25rem; 
-            border: 1px solid rgba(255, 255, 255, 0.05); 
+        ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.25); border-radius: 6px; }
+
+        body {
+            color: #0F172A;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #F5F7FB;
+            background-image:
+                radial-gradient(at 8% 0%, #DBEAFE 0, transparent 45%),
+                radial-gradient(at 95% 5%, #EDE9FE 0, transparent 45%),
+                radial-gradient(at 90% 95%, #FCE7F3 0, transparent 45%),
+                radial-gradient(at 5% 95%, #D1FAE5 0, transparent 40%);
+            background-attachment: fixed;
+        }
+        input, select, textarea { font-size: 16px !important; color-scheme: light; }
+
+        /* Liquid glass: vidro translúcido com desfoque, brilho e borda luminosa */
+        .card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.42) 100%);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-radius: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.75);
             padding: 1.25rem;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            box-shadow:
+                0 10px 30px -12px rgba(30, 41, 99, 0.18),
+                0 2px 6px rgba(30, 41, 99, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.95),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.35);
         }
 
         .premium-gradient {
@@ -63,16 +79,41 @@
             content: '';
             position: absolute;
             top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35) 0%, transparent 55%);
             opacity: 0.5;
             pointer-events: none;
         }
 
-        .glass-panel {
-            background: rgba(10, 13, 20, 0.8);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+        .card.p-0 { padding: 0; }
+        /* Cartão de crédito "físico": vidro escuro e brilhante */
+        .card.card-dark {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.92) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 40px -16px rgba(15, 23, 42, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.18);
         }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+        /* Modais, diálogos e avisos também em vidro */
+        #modal-content, #confirm-content, #category-content, #toast-container > div {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.72)) !important;
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border-color: rgba(255, 255, 255, 0.8) !important;
+            box-shadow: 0 24px 60px -20px rgba(30, 41, 99, 0.35), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+        }
+        /* Campos com aparência de vidro fosco */
+        input:not([type=checkbox]):not([type=file]), select {
+            background-color: rgba(255, 255, 255, 0.65) !important;
+            border-color: rgba(148, 163, 184, 0.35) !important;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+        input:not([type=checkbox]):focus, select:focus { background-color: #fff !important; border-color: #3B82F6 !important; }
+        .premium-gradient { box-shadow: 0 20px 40px -16px rgba(59, 130, 246, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important; }
         
         .hide-scroll { scrollbar-width: none; }
         .hide-scroll::-webkit-scrollbar { display: none; }
@@ -85,25 +126,25 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; cursor: pointer; }
+        input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.55; cursor: pointer; }
     </style>
 </head>
 <body class="antialiased overflow-hidden h-screen flex flex-col relative">
 
-    <div class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none z-0"></div>
-    <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent/10 blur-[120px] pointer-events-none z-0"></div>
+    <div class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] pointer-events-none z-0"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent/20 blur-[120px] pointer-events-none z-0"></div>
 
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 w-11/12 max-w-md pointer-events-none"></div>
 
-    <div id="confirm-dialog" class="fixed inset-0 bg-dark/80 backdrop-blur-md z-[90] hidden items-center justify-center transition-opacity opacity-0">
+    <div id="confirm-dialog" class="fixed inset-0 bg-slate-900/20 backdrop-blur-md z-[90] hidden items-center justify-center transition-opacity opacity-0">
         <div class="bg-surface border border-border_color rounded-2xl p-6 w-11/12 max-w-sm mx-auto shadow-2xl transform scale-95 transition-transform duration-200 relative overflow-hidden" id="confirm-content">
             <div class="w-12 h-12 rounded-full bg-danger/10 text-danger flex items-center justify-center text-xl mb-4 mx-auto border border-danger/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
-            <h3 class="text-lg font-bold text-center text-white mb-2">Atenção</h3>
-            <p id="confirm-message" class="text-slate-400 text-center mb-6 text-sm">Tem certeza?</p>
+            <h3 class="text-lg font-bold text-center text-ink mb-2">Atenção</h3>
+            <p id="confirm-message" class="text-slate-500 text-center mb-6 text-sm">Tem certeza?</p>
             <div class="flex flex-wrap gap-3">
-                <button onclick="app.closeConfirm()" class="flex-1 py-2.5 bg-surface_hover hover:bg-[#232C3E] text-slate-300 font-medium rounded-xl transition border border-border_color">Cancelar</button>
+                <button onclick="app.closeConfirm()" class="flex-1 py-2.5 bg-surface_hover hover:bg-white/80 text-slate-600 font-medium rounded-xl transition border border-border_color">Cancelar</button>
                 <button id="confirm-btn-yes" class="flex-1 py-2.5 bg-danger hover:bg-red-500 text-white font-medium rounded-xl transition shadow-[0_0_15px_rgba(239,68,68,0.3)]">Confirmar</button>
                 <button id="confirm-btn-alt" class="hidden w-full py-2.5 bg-danger/10 hover:bg-danger/20 text-danger font-medium rounded-xl transition border border-danger/30"></button>
             </div>
@@ -111,14 +152,14 @@
     </div>
 
     <!-- Category Manager Modal -->
-    <div id="category-modal" class="fixed inset-0 bg-dark/80 backdrop-blur-md z-[95] hidden items-center justify-center transition-opacity opacity-0">
+    <div id="category-modal" class="fixed inset-0 bg-slate-900/20 backdrop-blur-md z-[95] hidden items-center justify-center transition-opacity opacity-0">
         <div class="bg-surface border border-border_color rounded-2xl p-5 w-11/12 max-w-sm mx-auto shadow-2xl transform scale-95 transition-transform duration-200 relative" id="category-content">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-white">Gerenciar Categorias</h3>
-                <button onclick="app.fecharCategorias()" class="text-slate-400 hover:text-white w-8 h-8 rounded-full flex items-center justify-center transition bg-surface_hover"><i class="fa-solid fa-xmark"></i></button>
+                <h3 class="text-lg font-bold text-ink">Gerenciar Categorias</h3>
+                <button onclick="app.fecharCategorias()" class="text-slate-500 hover:text-ink w-8 h-8 rounded-full flex items-center justify-center transition bg-surface_hover"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="flex gap-2 mb-4">
-                <input type="text" id="nova-categoria-input" class="flex-1 px-3 py-2 bg-dark border border-border_color text-white rounded-xl text-sm outline-none focus:border-primary focus:shadow-[0_0_10px_rgba(59,130,246,0.2)] transition" placeholder="Nova categoria...">
+                <input type="text" id="nova-categoria-input" class="flex-1 px-3 py-2 bg-dark border border-border_color text-ink rounded-xl text-sm outline-none focus:border-primary focus:shadow-[0_0_10px_rgba(59,130,246,0.2)] transition" placeholder="Nova categoria...">
                 <button onclick="app.adicionarCategoria()" class="bg-primary text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-primary_dark transition shadow-[0_0_10px_rgba(59,130,246,0.3)]"><i class="fa-solid fa-plus"></i></button>
             </div>
             <ul id="lista-categorias" class="max-h-60 overflow-y-auto space-y-2 pr-1"></ul>
@@ -132,10 +173,10 @@
             <div class="w-20 h-20 bg-primary/20 text-primary border border-primary/30 rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl shadow-[0_0_20px_rgba(59,130,246,0.2)] transform rotate-3">
                 <i class="fa-solid fa-wallet -rotate-3"></i>
             </div>
-            <h2 class="text-2xl font-bold mb-2 text-white">NexFinance</h2>
-            <p class="text-slate-400 mb-8 text-sm">Digite seu PIN para acessar.</p>
+            <h2 class="text-2xl font-bold mb-2 text-ink">NexFinance</h2>
+            <p class="text-slate-500 mb-8 text-sm">Digite seu PIN para acessar.</p>
             <div class="relative max-w-[200px] mx-auto mb-6">
-                <input type="password" id="pin-input" aria-label="PIN de acesso" autocomplete="current-password" class="w-full text-center text-2xl tracking-[0.3em] p-4 bg-dark border border-border_color text-white rounded-2xl focus:outline-none focus:border-primary focus:shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all font-mono" placeholder="••••••" maxlength="64">
+                <input type="password" id="pin-input" aria-label="PIN de acesso" autocomplete="current-password" class="w-full text-center text-2xl tracking-[0.3em] p-4 bg-dark border border-border_color text-ink rounded-2xl focus:outline-none focus:border-primary focus:shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all font-mono" placeholder="••••••" maxlength="64">
             </div>
             <button id="pin-btn" onclick="app.login()" class="w-full bg-primary text-white font-bold py-4 rounded-2xl hover:bg-primary_dark active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(59,130,246,0.4)] disabled:opacity-60 disabled:cursor-wait">
                 Acessar o Sistema
@@ -145,29 +186,29 @@
     </div>
 
     <div id="app-container" class="hidden h-full w-full relative z-10">
-        <div id="sidebar-overlay" onclick="app.toggleMenu()" class="fixed inset-0 bg-dark/60 backdrop-blur-sm z-30 hidden md:hidden transition-opacity opacity-0"></div>
+        <div id="sidebar-overlay" onclick="app.toggleMenu()" class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-30 hidden md:hidden transition-opacity opacity-0"></div>
 
         <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 glass-panel border-r border-border_color flex flex-col z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 h-full">
             <div class="p-5 flex items-center justify-between border-b border-border_color">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-[0_0_15px_rgba(139,92,246,0.4)]"><i class="fa-solid fa-wallet"></i></div>
-                    <span class="font-bold text-xl text-white tracking-tight">NexFinance</span>
+                    <span class="font-bold text-xl text-ink tracking-tight">NexFinance</span>
                 </div>
-                <button onclick="app.toggleMenu()" class="md:hidden text-slate-400 hover:text-white p-2 text-xl"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="app.toggleMenu()" class="md:hidden text-slate-500 hover:text-ink p-2 text-xl"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto" id="main-nav">
                 <a href="#" onclick="app.navigate('dashboard')" data-view="dashboard" class="nav-item active flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary border border-primary/20 rounded-xl font-medium transition"><i class="fa-solid fa-house w-5 text-center"></i> Dashboard</a>
-                <a href="#" onclick="app.navigate('extrato')" data-view="extrato" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-list w-5 text-center"></i> Extrato</a>
-                <a href="#" onclick="app.navigate('receitas')" data-view="receitas" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-arrow-up w-5 text-center"></i> Receitas</a>
-                <a href="#" onclick="app.navigate('despesas')" data-view="despesas" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-arrow-down w-5 text-center"></i> Despesas</a>
-                <a href="#" onclick="app.navigate('cartoes')" data-view="cartoes" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-regular fa-credit-card w-5 text-center"></i> Cartões</a>
-                <a href="#" onclick="app.navigate('investimentos')" data-view="investimentos" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-chart-line w-5 text-center"></i> Investimentos</a>
+                <a href="#" onclick="app.navigate('extrato')" data-view="extrato" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-800 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-list w-5 text-center"></i> Extrato</a>
+                <a href="#" onclick="app.navigate('receitas')" data-view="receitas" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-800 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-arrow-up w-5 text-center"></i> Receitas</a>
+                <a href="#" onclick="app.navigate('despesas')" data-view="despesas" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-800 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-arrow-down w-5 text-center"></i> Despesas</a>
+                <a href="#" onclick="app.navigate('cartoes')" data-view="cartoes" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-800 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-regular fa-credit-card w-5 text-center"></i> Cartões</a>
+                <a href="#" onclick="app.navigate('investimentos')" data-view="investimentos" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-800 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-chart-line w-5 text-center"></i> Investimentos</a>
             </nav>
             
-            <div class="p-4 border-t border-border_color space-y-2 bg-dark/30">
-                <button onclick="app.exportBackup()" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-surface_hover rounded-xl transition text-left text-sm font-medium"><i class="fa-solid fa-download w-5 text-center"></i> Exportar Backup</button>
-                <button onclick="document.getElementById('import-file').click()" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-surface_hover rounded-xl transition text-left text-sm font-medium"><i class="fa-solid fa-upload w-5 text-center"></i> Importar Backup</button>
+            <div class="p-4 border-t border-border_color space-y-2 bg-white/30">
+                <button onclick="app.exportBackup()" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-ink hover:bg-surface_hover rounded-xl transition text-left text-sm font-medium"><i class="fa-solid fa-download w-5 text-center"></i> Exportar Backup</button>
+                <button onclick="document.getElementById('import-file').click()" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-ink hover:bg-surface_hover rounded-xl transition text-left text-sm font-medium"><i class="fa-solid fa-upload w-5 text-center"></i> Importar Backup</button>
                 <input type="file" id="import-file" class="hidden" accept=".json" onchange="app.importBackup(event)">
                 <button onclick="app.logout()" class="w-full flex items-center gap-3 px-4 py-3 text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 rounded-xl transition text-left text-sm font-medium mt-2"><i class="fa-solid fa-lock w-5 text-center"></i> Bloquear Sistema</button>
             </div>
@@ -177,12 +218,12 @@
             <header class="glass-panel border-b border-border_color sticky top-0 z-20">
                 <div class="flex items-center justify-between p-4 pb-2 md:py-5 md:px-8">
                     <div class="flex items-center gap-3">
-                        <button onclick="app.toggleMenu()" class="md:hidden text-slate-300 hover:text-white p-1 text-xl"><i class="fa-solid fa-bars"></i></button>
+                        <button onclick="app.toggleMenu()" class="md:hidden text-slate-600 hover:text-ink p-1 text-xl"><i class="fa-solid fa-bars"></i></button>
                         <div>
-                            <h1 class="text-xl md:text-2xl font-bold text-white leading-tight" id="header-title">Visão Geral 👋</h1>
+                            <h1 class="text-xl md:text-2xl font-bold text-ink leading-tight" id="header-title">Visão Geral 👋</h1>
                         </div>
                     </div>
-                    <button id="sync-status" onclick="app.syncNow()" aria-live="polite" class="ml-auto md:mr-3 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border_color bg-surface text-xs font-medium text-slate-300 hover:bg-surface_hover transition" title="Estado da sincronização">
+                    <button id="sync-status" onclick="app.syncNow()" aria-live="polite" class="ml-auto md:mr-3 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border_color bg-surface text-xs font-medium text-slate-600 hover:bg-surface_hover transition" title="Estado da sincronização">
                         <span id="sync-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
                         <span id="sync-text">Conectando…</span>
                     </button>
@@ -192,9 +233,9 @@
                 </div>
 
                 <div class="flex items-center gap-2 px-4 pb-4 md:px-8 w-full overflow-x-auto hide-scroll">
-                    <select id="filter-year" aria-label="Ano" class="bg-surface border border-border_color text-slate-200 text-sm md:text-base rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block p-2.5 font-medium outline-none transition" onchange="app.renderCurrentView()">
+                    <select id="filter-year" aria-label="Ano" class="bg-surface border border-border_color text-slate-700 text-sm md:text-base rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block p-2.5 font-medium outline-none transition" onchange="app.renderCurrentView()">
                     </select>
-                    <select id="filter-month" aria-label="Mês" class="bg-surface border border-border_color text-slate-200 text-sm md:text-base rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block p-2.5 font-medium outline-none flex-1 min-w-[120px] transition" onchange="app.renderCurrentView()">
+                    <select id="filter-month" aria-label="Mês" class="bg-surface border border-border_color text-slate-700 text-sm md:text-base rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block p-2.5 font-medium outline-none flex-1 min-w-[120px] transition" onchange="app.renderCurrentView()">
                         <option value="0">Janeiro</option>
                         <option value="1">Fevereiro</option>
                         <option value="2">Março</option>
@@ -228,37 +269,37 @@
 
                         <div class="card flex flex-col justify-center p-5 relative overflow-hidden group">
                             <div class="absolute -right-4 -top-4 w-16 h-16 bg-success/10 rounded-full blur-xl group-hover:bg-success/20 transition"></div>
-                            <div class="text-slate-400 text-xs md:text-sm font-medium mb-2 flex justify-between items-center">Receitas <div class="w-7 h-7 rounded-full bg-success/10 text-success border border-success/20 flex items-center justify-center text-xs"><i class="fa-solid fa-arrow-up"></i></div></div>
-                            <div class="text-lg md:text-2xl font-bold text-white break-words" id="dash-receitas">R$ 0,00</div>
+                            <div class="text-slate-500 text-xs md:text-sm font-medium mb-2 flex justify-between items-center">Receitas <div class="w-7 h-7 rounded-full bg-success/10 text-success border border-success/20 flex items-center justify-center text-xs"><i class="fa-solid fa-arrow-up"></i></div></div>
+                            <div class="text-lg md:text-2xl font-bold text-ink break-words" id="dash-receitas">R$ 0,00</div>
                         </div>
 
                         <div class="card flex flex-col justify-center p-5 relative overflow-hidden group">
                             <div class="absolute -right-4 -top-4 w-16 h-16 bg-danger/10 rounded-full blur-xl group-hover:bg-danger/20 transition"></div>
-                            <div class="text-slate-400 text-xs md:text-sm font-medium mb-2 flex justify-between items-center">Despesas <div class="w-7 h-7 rounded-full bg-danger/10 text-danger border border-danger/20 flex items-center justify-center text-xs"><i class="fa-solid fa-arrow-down"></i></div></div>
-                            <div class="text-lg md:text-2xl font-bold text-white break-words" id="dash-despesas">R$ 0,00</div>
+                            <div class="text-slate-500 text-xs md:text-sm font-medium mb-2 flex justify-between items-center">Despesas <div class="w-7 h-7 rounded-full bg-danger/10 text-danger border border-danger/20 flex items-center justify-center text-xs"><i class="fa-solid fa-arrow-down"></i></div></div>
+                            <div class="text-lg md:text-2xl font-bold text-ink break-words" id="dash-despesas">R$ 0,00</div>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="card p-5 md:p-6 lg:col-span-2">
-                            <h3 class="font-bold text-white mb-4 text-sm md:text-base flex items-center gap-2"><i class="fa-solid fa-chart-simple text-primary"></i> Evolução Financeira <span id="chart-subtitle" class="text-xs font-medium text-slate-500 ml-1"></span></h3>
+                            <h3 class="font-bold text-ink mb-4 text-sm md:text-base flex items-center gap-2"><i class="fa-solid fa-chart-simple text-primary"></i> Evolução Financeira <span id="chart-subtitle" class="text-xs font-medium text-slate-500 ml-1"></span></h3>
                             <div class="relative h-48 md:h-64 w-full"><canvas id="mainChart"></canvas></div>
                         </div>
                         
                         <div class="card flex flex-col justify-between p-6 bg-gradient-to-br from-surface to-dark relative overflow-hidden">
                             <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-accent/5 rounded-full blur-3xl"></div>
                             <div class="relative z-10">
-                                <div class="text-slate-400 text-sm font-medium mb-2 flex justify-between items-center">Compras no Cartão <i class="fa-brands fa-cc-mastercard text-2xl text-slate-500"></i></div>
-                                <div class="text-3xl font-bold text-white mb-1" id="dash-cartao">R$ 0,00</div>
+                                <div class="text-slate-500 text-sm font-medium mb-2 flex justify-between items-center">Compras no Cartão <i class="fa-brands fa-cc-mastercard text-2xl text-slate-500"></i></div>
+                                <div class="text-3xl font-bold text-ink mb-1" id="dash-cartao">R$ 0,00</div>
                                 <div class="text-xs text-slate-500">Lançadas no período selecionado</div>
                             </div>
-                            <button onclick="app.navigate('cartoes')" class="mt-6 w-full py-2.5 bg-surface_hover border border-border_color text-slate-300 rounded-xl text-sm font-bold hover:bg-[#232C3E] hover:text-white transition">Ver Detalhes</button>
+                            <button onclick="app.navigate('cartoes')" class="mt-6 w-full py-2.5 bg-surface_hover border border-border_color text-slate-600 rounded-xl text-sm font-bold hover:bg-white/80 hover:text-ink transition">Ver Detalhes</button>
                         </div>
                     </div>
 
                     <div class="card p-0 overflow-hidden border-border_color">
                         <div class="p-4 md:p-5 border-b border-border_color flex justify-between items-center bg-surface/50">
-                            <h3 class="font-bold text-white text-sm md:text-base">Últimas Movimentações</h3>
+                            <h3 class="font-bold text-ink text-sm md:text-base">Últimas Movimentações</h3>
                             <button onclick="app.navigate('extrato')" class="text-xs font-bold text-primary hover:text-primary_dark transition">Ver todas <i class="fa-solid fa-arrow-right ml-1"></i></button>
                         </div>
                         <div class="divide-y divide-border_color" id="dash-transactions-list"></div>
@@ -271,17 +312,17 @@
                         <div class="card flex flex-col justify-center p-6 border-success/20 relative overflow-hidden">
                             <div class="absolute right-0 top-0 w-32 h-32 bg-success/10 blur-3xl"></div>
                             <div class="text-success text-sm font-bold mb-1 relative z-10"><i class="fa-solid fa-arrow-up mr-2"></i>Total Receitas</div>
-                            <div class="text-2xl md:text-3xl font-black text-white break-words relative z-10" id="rec-total">R$ 0,00</div>
+                            <div class="text-2xl md:text-3xl font-black text-ink break-words relative z-10" id="rec-total">R$ 0,00</div>
                         </div>
                         <div class="card flex flex-col justify-center p-6 border-border_color">
-                            <div class="text-slate-400 text-sm font-medium mb-1"><i class="fa-solid fa-star text-yellow-500/80 mr-2"></i>Maior Entrada</div>
-                            <div class="text-lg md:text-xl font-bold text-white truncate" id="rec-maior-nome">-</div>
+                            <div class="text-slate-500 text-sm font-medium mb-1"><i class="fa-solid fa-star text-yellow-500/80 mr-2"></i>Maior Entrada</div>
+                            <div class="text-lg md:text-xl font-bold text-ink truncate" id="rec-maior-nome">-</div>
                             <div class="text-sm text-success font-medium" id="rec-maior-valor">R$ 0,00</div>
                         </div>
                     </div>
                     <div class="card p-0 overflow-hidden">
                         <div class="p-4 border-b border-border_color bg-surface/50">
-                            <h3 class="font-bold text-white">Histórico</h3>
+                            <h3 class="font-bold text-ink">Histórico</h3>
                         </div>
                         <div class="divide-y divide-border_color" id="rec-list"></div>
                     </div>
@@ -293,17 +334,17 @@
                         <div class="card flex flex-col justify-center p-6 border-danger/20 relative overflow-hidden">
                             <div class="absolute right-0 top-0 w-32 h-32 bg-danger/10 blur-3xl"></div>
                             <div class="text-danger text-sm font-bold mb-1 relative z-10"><i class="fa-solid fa-arrow-down mr-2"></i>Total Despesas</div>
-                            <div class="text-2xl md:text-3xl font-black text-white break-words relative z-10" id="desp-total">R$ 0,00</div>
+                            <div class="text-2xl md:text-3xl font-black text-ink break-words relative z-10" id="desp-total">R$ 0,00</div>
                         </div>
                         <div class="card flex flex-col justify-center p-6 border-border_color">
-                            <div class="text-slate-400 text-sm font-medium mb-1"><i class="fa-solid fa-fire text-orange-500/80 mr-2"></i>Maior Gasto</div>
-                            <div class="text-lg md:text-xl font-bold text-white truncate" id="desp-maior-nome">-</div>
+                            <div class="text-slate-500 text-sm font-medium mb-1"><i class="fa-solid fa-fire text-orange-500/80 mr-2"></i>Maior Gasto</div>
+                            <div class="text-lg md:text-xl font-bold text-ink truncate" id="desp-maior-nome">-</div>
                             <div class="text-sm text-danger font-medium" id="desp-maior-valor">R$ 0,00</div>
                         </div>
                     </div>
                     <div class="card p-0 overflow-hidden">
                         <div class="p-4 border-b border-border_color bg-surface/50">
-                            <h3 class="font-bold text-white">Histórico</h3>
+                            <h3 class="font-bold text-ink">Histórico</h3>
                         </div>
                         <div class="divide-y divide-border_color" id="desp-list"></div>
                     </div>
@@ -312,10 +353,10 @@
                 <!-- VIEW: CARTÕES -->
                 <div id="view-cartoes" class="view-section max-w-4xl mx-auto space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="card p-6 bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700 shadow-xl relative overflow-hidden rounded-2xl flex flex-col justify-between min-h-[160px]">
+                        <div class="card card-dark p-6 shadow-xl relative overflow-hidden rounded-2xl flex flex-col justify-between min-h-[160px]">
                             <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
                             <div class="flex justify-between items-start relative z-10">
-                                <span class="text-slate-400 font-medium text-sm tracking-widest uppercase">Compras no Período</span>
+                                <span class="text-slate-500 font-medium text-sm tracking-widest uppercase !text-slate-300">Compras no Período</span>
                                 <div class="flex gap-2 text-2xl text-slate-500">
                                     <i class="fa-brands fa-cc-visa"></i>
                                     <i class="fa-brands fa-cc-mastercard"></i>
@@ -326,14 +367,14 @@
                             </div>
                         </div>
                         <div class="card flex flex-col justify-center p-6 border-border_color">
-                            <div class="text-slate-400 text-sm font-medium mb-1"><i class="fa-solid fa-bag-shopping text-primary mr-2"></i>Maior Compra</div>
-                            <div class="text-lg md:text-xl font-bold text-white truncate mt-2" id="cart-maior-nome">-</div>
-                            <div class="text-sm text-slate-400 font-medium" id="cart-maior-valor">R$ 0,00</div>
+                            <div class="text-slate-500 text-sm font-medium mb-1"><i class="fa-solid fa-bag-shopping text-primary mr-2"></i>Maior Compra</div>
+                            <div class="text-lg md:text-xl font-bold text-ink truncate mt-2" id="cart-maior-nome">-</div>
+                            <div class="text-sm text-slate-500 font-medium" id="cart-maior-valor">R$ 0,00</div>
                         </div>
                     </div>
                     <div class="card p-0 overflow-hidden">
                         <div class="p-4 border-b border-border_color bg-surface/50">
-                            <h3 class="font-bold text-white">Compras no Cartão</h3>
+                            <h3 class="font-bold text-ink">Compras no Cartão</h3>
                         </div>
                         <div class="divide-y divide-border_color" id="cart-list"></div>
                     </div>
@@ -342,16 +383,16 @@
                 <!-- VIEW: EXTRATO -->
                 <div id="view-extrato" class="view-section max-w-4xl mx-auto space-y-6">
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-                        <div class="card p-3 md:p-4 min-w-0 flex sm:block justify-between items-center"><div class="text-success text-xs font-bold sm:mb-1">Receitas</div><div class="text-base md:text-xl font-bold text-white whitespace-nowrap" id="ext-rec">R$ 0,00</div></div>
-                        <div class="card p-3 md:p-4 min-w-0 flex sm:block justify-between items-center"><div class="text-danger text-xs font-bold sm:mb-1">Despesas</div><div class="text-base md:text-xl font-bold text-white whitespace-nowrap" id="ext-desp">R$ 0,00</div></div>
-                        <div class="card p-3 md:p-4 min-w-0 flex sm:block justify-between items-center"><div class="text-accent text-xs font-bold sm:mb-1">Investimentos</div><div class="text-base md:text-xl font-bold text-white whitespace-nowrap" id="ext-inv">R$ 0,00</div></div>
+                        <div class="card p-3 md:p-4 min-w-0 flex sm:block justify-between items-center"><div class="text-success text-xs font-bold sm:mb-1">Receitas</div><div class="text-base md:text-xl font-bold text-ink whitespace-nowrap" id="ext-rec">R$ 0,00</div></div>
+                        <div class="card p-3 md:p-4 min-w-0 flex sm:block justify-between items-center"><div class="text-danger text-xs font-bold sm:mb-1">Despesas</div><div class="text-base md:text-xl font-bold text-ink whitespace-nowrap" id="ext-desp">R$ 0,00</div></div>
+                        <div class="card p-3 md:p-4 min-w-0 flex sm:block justify-between items-center"><div class="text-accent text-xs font-bold sm:mb-1">Investimentos</div><div class="text-base md:text-xl font-bold text-ink whitespace-nowrap" id="ext-inv">R$ 0,00</div></div>
                     </div>
                     <div class="card p-4 flex flex-col md:flex-row gap-3">
                         <div class="relative flex-1">
                             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-magnifying-glass"></i></div>
-                            <input type="search" id="ext-busca" oninput="app.renderCurrentView()" aria-label="Buscar lançamentos" placeholder="Buscar por descrição ou categoria…" class="w-full pl-10 pr-3 py-2.5 bg-dark border border-border_color rounded-xl text-white outline-none focus:border-primary transition">
+                            <input type="search" id="ext-busca" oninput="app.renderCurrentView()" aria-label="Buscar lançamentos" placeholder="Buscar por descrição ou categoria…" class="w-full pl-10 pr-3 py-2.5 bg-dark border border-border_color rounded-xl text-ink outline-none focus:border-primary transition">
                         </div>
-                        <select id="ext-tipo" onchange="app.renderCurrentView()" aria-label="Filtrar por tipo" class="bg-dark border border-border_color text-slate-200 rounded-xl p-2.5 outline-none focus:border-primary transition">
+                        <select id="ext-tipo" onchange="app.renderCurrentView()" aria-label="Filtrar por tipo" class="bg-dark border border-border_color text-slate-700 rounded-xl p-2.5 outline-none focus:border-primary transition">
                             <option value="">Todos os tipos</option>
                             <option value="receita">Receitas</option>
                             <option value="despesa">Despesas</option>
@@ -361,8 +402,8 @@
                     </div>
                     <div class="card p-0 overflow-hidden">
                         <div class="p-4 border-b border-border_color bg-surface/50 flex justify-between items-center">
-                            <h3 class="font-bold text-white">Movimentações</h3>
-                            <span class="text-xs text-slate-400" id="ext-count"></span>
+                            <h3 class="font-bold text-ink">Movimentações</h3>
+                            <span class="text-xs text-slate-500" id="ext-count"></span>
                         </div>
                         <div class="divide-y divide-border_color" id="ext-list"></div>
                     </div>
@@ -374,17 +415,17 @@
                         <div class="card flex flex-col justify-center p-6 border-accent/20 relative overflow-hidden">
                             <div class="absolute right-0 top-0 w-32 h-32 bg-accent/10 blur-3xl"></div>
                             <div class="text-accent text-sm font-bold mb-1 relative z-10"><i class="fa-solid fa-chart-pie mr-2"></i>Aportes no Período</div>
-                            <div class="text-2xl md:text-3xl font-black text-white break-words relative z-10" id="inv-total">R$ 0,00</div>
+                            <div class="text-2xl md:text-3xl font-black text-ink break-words relative z-10" id="inv-total">R$ 0,00</div>
                         </div>
                         <div class="card flex flex-col justify-center p-6 border-border_color">
-                            <div class="text-slate-400 text-sm font-medium mb-1"><i class="fa-solid fa-bullseye text-accent mr-2"></i>Principal Ativo</div>
-                            <div class="text-lg md:text-xl font-bold text-white truncate" id="inv-maior-nome">-</div>
+                            <div class="text-slate-500 text-sm font-medium mb-1"><i class="fa-solid fa-bullseye text-accent mr-2"></i>Principal Ativo</div>
+                            <div class="text-lg md:text-xl font-bold text-ink truncate" id="inv-maior-nome">-</div>
                             <div class="text-sm text-accent font-medium" id="inv-maior-valor">R$ 0,00</div>
                         </div>
                     </div>
                     <div class="card p-0 overflow-hidden">
                         <div class="p-4 border-b border-border_color bg-surface/50">
-                            <h3 class="font-bold text-white">Histórico de Aportes</h3>
+                            <h3 class="font-bold text-ink">Histórico de Aportes</h3>
                         </div>
                         <div class="divide-y divide-border_color" id="inv-list"></div>
                     </div>
@@ -399,14 +440,14 @@
     </div>
 
     <!-- Transaction Modal (Dark Premium) -->
-    <div id="transaction-modal" class="fixed inset-0 bg-dark/80 backdrop-blur-md z-[80] hidden items-end md:items-center justify-center transition-opacity opacity-0">
+    <div id="transaction-modal" class="fixed inset-0 bg-slate-900/20 backdrop-blur-md z-[80] hidden items-end md:items-center justify-center transition-opacity opacity-0">
         <div class="bg-surface border border-border_color rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-lg md:mx-4 transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-300 max-h-[90vh] flex flex-col relative overflow-hidden" id="modal-content">
             
-            <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mt-3 mb-1 md:hidden"></div>
+            <div class="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mt-3 mb-1 md:hidden"></div>
             
             <div class="px-5 py-4 border-b border-border_color flex justify-between items-center shrink-0 bg-surface/50">
-                <h3 class="font-bold text-lg text-white" id="modal-title">Novo Registro</h3>
-                <button onclick="app.closeModal()" class="text-slate-400 hover:text-white bg-surface_hover hover:bg-[#232C3E] w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+                <h3 class="font-bold text-lg text-ink" id="modal-title">Novo Registro</h3>
+                <button onclick="app.closeModal()" class="text-slate-500 hover:text-ink bg-surface_hover hover:bg-white/80 w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
             <div class="p-5 space-y-5 overflow-y-auto grow">
@@ -414,43 +455,43 @@
                 
                 <div class="bg-dark p-1 rounded-xl flex gap-1 border border-border_color">
                     <button type="button" onclick="app.setFormType('despesa')" id="btn-type-despesa" class="flex-1 py-2 rounded-lg text-xs md:text-sm font-bold bg-surface border border-danger/30 text-danger shadow-[0_0_10px_rgba(239,68,68,0.1)] transition">Despesa</button>
-                    <button type="button" onclick="app.setFormType('receita')" id="btn-type-receita" class="flex-1 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-400 hover:text-white transition">Receita</button>
-                    <button type="button" onclick="app.setFormType('investimento')" id="btn-type-investimento" class="flex-1 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-400 hover:text-white transition">Investir</button>
+                    <button type="button" onclick="app.setFormType('receita')" id="btn-type-receita" class="flex-1 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-500 hover:text-ink transition">Receita</button>
+                    <button type="button" onclick="app.setFormType('investimento')" id="btn-type-investimento" class="flex-1 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-500 hover:text-ink transition">Investir</button>
                     <input type="hidden" id="form-type" value="despesa">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Descrição</label>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Descrição</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-pen"></i></div>
-                        <input type="text" id="form-descricao" class="w-full pl-10 pr-4 py-3 bg-dark border border-border_color rounded-xl text-white focus:bg-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none transition" placeholder="Ex: Supermercado">
+                        <input type="text" id="form-descricao" class="w-full pl-10 pr-4 py-3 bg-dark border border-border_color rounded-xl text-ink focus:bg-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none transition" placeholder="Ex: Supermercado">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Valor (Total)</label>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Valor (Total)</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 font-medium">R$</div>
-                            <input type="number" step="0.01" id="form-valor" class="w-full pl-10 pr-3 py-3 bg-dark border border-border_color rounded-xl text-white font-bold focus:bg-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none transition" placeholder="0,00" inputmode="decimal">
+                            <input type="number" step="0.01" id="form-valor" class="w-full pl-10 pr-3 py-3 bg-dark border border-border_color rounded-xl text-ink font-bold focus:bg-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none transition" placeholder="0,00" inputmode="decimal">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Data</label>
-                        <input type="date" id="form-data" class="w-full px-3 py-3 bg-dark border border-border_color rounded-xl text-white focus:bg-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none transition">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Data</label>
+                        <input type="date" id="form-data" class="w-full px-3 py-3 bg-dark border border-border_color rounded-xl text-ink focus:bg-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none transition">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Categoria</label>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Categoria</label>
                     <div class="flex gap-2">
                         <div class="relative flex-1">
                             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-tag"></i></div>
-                            <select id="form-categoria" class="w-full pl-10 pr-10 py-3 bg-dark border border-border_color rounded-xl text-white focus:bg-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none transition appearance-none">
+                            <select id="form-categoria" class="w-full pl-10 pr-10 py-3 bg-dark border border-border_color rounded-xl text-ink focus:bg-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none transition appearance-none">
                             </select>
                             <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-chevron-down text-xs"></i></div>
                         </div>
-                        <button type="button" onclick="app.gerenciarCategorias()" class="w-[50px] h-[50px] bg-dark border border-border_color text-slate-400 hover:bg-surface_hover hover:text-white hover:border-primary/50 rounded-xl flex items-center justify-center transition shrink-0" title="Gerenciar Categorias">
+                        <button type="button" onclick="app.gerenciarCategorias()" class="w-[50px] h-[50px] bg-dark border border-border_color text-slate-500 hover:bg-surface_hover hover:text-ink hover:border-primary/50 rounded-xl flex items-center justify-center transition shrink-0" title="Gerenciar Categorias">
                             <i class="fa-solid fa-gear"></i>
                         </button>
                     </div>
@@ -460,21 +501,21 @@
                 <div id="grupo-container" class="hidden p-4 bg-primary/5 border border-primary/20 rounded-xl">
                     <label class="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" id="form-grupo" onchange="app.toggleGrupo()" class="w-5 h-5 accent-[#3B82F6] cursor-pointer">
-                        <span class="text-sm font-bold text-white">Editar a compra inteira (todas as parcelas)</span>
+                        <span class="text-sm font-bold text-ink">Editar a compra inteira (todas as parcelas)</span>
                     </label>
-                    <p id="grupo-info" class="text-xs text-slate-400 mt-2"></p>
+                    <p id="grupo-info" class="text-xs text-slate-500 mt-2"></p>
                 </div>
 
                 <!-- Credit Card Options -->
                 <div id="cartao-container" class="mt-2 p-4 bg-dark border border-border_color rounded-xl flex flex-col gap-3 cursor-pointer hover:bg-surface_hover transition" onclick="document.getElementById('form-cartao').click()">
                     <div class="flex items-center gap-3">
                         <div class="relative flex items-center">
-                            <input type="checkbox" id="form-cartao" class="w-5 h-5 rounded border-slate-600 bg-surface text-primary focus:ring-primary/50 focus:ring-offset-dark cursor-pointer appearance-none checked:bg-primary checked:border-primary transition" onclick="event.stopPropagation(); app.toggleCartaoOpcoes()">
+                            <input type="checkbox" id="form-cartao" class="w-5 h-5 rounded border-slate-300 bg-white text-primary focus:ring-primary/50 focus:ring-offset-dark cursor-pointer appearance-none checked:bg-primary checked:border-primary transition" onclick="event.stopPropagation(); app.toggleCartaoOpcoes()">
                             <i class="fa-solid fa-check absolute text-white text-[10px] left-[5px] pointer-events-none opacity-0 transition-opacity" id="cartao-check-icon"></i>
                         </div>
                         <style>#form-cartao:checked + #cartao-check-icon { opacity: 1; }</style>
                         <div>
-                            <p class="text-sm font-bold text-white">Compra com Cartão</p>
+                            <p class="text-sm font-bold text-ink">Compra com Cartão</p>
                             <p class="text-xs text-slate-500">Adiciona à fatura e permite parcelas</p>
                         </div>
                     </div>
@@ -482,21 +523,21 @@
                     <div id="cartao-opcoes" class="hidden grid-cols-1 md:grid-cols-3 gap-3 w-full mt-2 pt-4 border-t border-border_color" onclick="event.stopPropagation()">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Banco</label>
-                            <select id="form-banco" class="w-full px-3 py-2 bg-surface border border-border_color rounded-lg text-white text-sm outline-none">
+                            <select id="form-banco" class="w-full px-3 py-2 bg-surface border border-border_color rounded-lg text-ink text-sm outline-none">
                                 <option value="Nubank">Nubank</option>
                                 <option value="Santander">Santander</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bandeira</label>
-                            <select id="form-bandeira" class="w-full px-3 py-2 bg-surface border border-border_color rounded-lg text-white text-sm outline-none">
+                            <select id="form-bandeira" class="w-full px-3 py-2 bg-surface border border-border_color rounded-lg text-ink text-sm outline-none">
                                 <option value="Mastercard">Mastercard</option>
                                 <option value="Visa">Visa</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Parcelas</label>
-                            <select id="form-parcelas" class="w-full px-3 py-2 bg-surface border border-border_color rounded-lg text-white text-sm outline-none focus:border-primary">
+                            <select id="form-parcelas" class="w-full px-3 py-2 bg-surface border border-border_color rounded-lg text-ink text-sm outline-none focus:border-primary">
                                 <option value="1">1x (À vista)</option>
                                 <option value="2">2x</option>
                                 <option value="3">3x</option>
@@ -517,7 +558,7 @@
             
             <div class="p-5 border-t border-border_color bg-surface shrink-0 flex gap-3 pb-8 md:pb-5">
                 <button id="modal-delete" onclick="app.deleteTransaction(document.getElementById('form-id').value, true)" aria-label="Excluir registro" title="Excluir registro" class="hidden w-14 shrink-0 py-3.5 text-danger bg-danger/10 hover:bg-danger/20 border border-danger/30 rounded-xl transition"><i class="fa-solid fa-trash"></i></button>
-                <button onclick="app.closeModal()" class="flex-1 py-3.5 text-sm font-bold text-slate-300 bg-surface_hover hover:bg-[#232C3E] border border-border_color rounded-xl transition">Cancelar</button>
+                <button onclick="app.closeModal()" class="flex-1 py-3.5 text-sm font-bold text-slate-600 bg-surface_hover hover:bg-white/80 border border-border_color rounded-xl transition">Cancelar</button>
                 <button onclick="app.saveTransaction()" class="flex-1 py-3.5 text-sm font-bold bg-primary text-white hover:bg-primary_dark rounded-xl transition shadow-[0_0_15px_rgba(59,130,246,0.3)]">Salvar Registro</button>
             </div>
         </div>
@@ -641,7 +682,7 @@
                 const icon = type === 'success' ? 'fa-check-circle text-success' : 'fa-circle-exclamation text-danger';
                 const shadow = type === 'success' ? 'shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'shadow-[0_0_15px_rgba(239,68,68,0.15)]';
 
-                toast.className = `${bgClass} border ${shadow} text-white px-4 py-3 rounded-xl flex items-center gap-3 transform transition-all duration-300 translate-y-[-100%] opacity-0`;
+                toast.className = `${bgClass} border ${shadow} text-ink px-4 py-3 rounded-xl flex items-center gap-3 transform transition-all duration-300 translate-y-[-100%] opacity-0`;
                 toast.setAttribute('role', type === 'success' ? 'status' : 'alert');
                 toast.innerHTML = `<i class="fa-solid ${icon} text-lg drop-shadow-md"></i> <span class="font-medium text-sm"></span>`;
                 toast.querySelector('span').textContent = message;
@@ -710,7 +751,7 @@
                 lista.innerHTML = '';
                 lista.innerHTML = this.data.config.categorias[tipo].map((cat, index) => `
                         <li class="flex justify-between items-center p-3 bg-dark rounded-xl border border-border_color">
-                            <span class="text-sm font-medium text-slate-200">${this.esc(cat)}</span>
+                            <span class="text-sm font-medium text-slate-700">${this.esc(cat)}</span>
                             <button onclick="app.removerCategoria(${index})" aria-label="Remover categoria" class="text-danger hover:bg-danger/10 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>
                         </li>`).join('');
             },
@@ -1042,7 +1083,7 @@
                 
                 document.querySelectorAll('#main-nav .nav-item').forEach(el => {
                     if (el.dataset.view === viewId) el.className = 'nav-item active flex items-center gap-3 px-4 py-3 bg-primary/10 border border-primary/20 text-primary rounded-xl font-medium transition shadow-[0_0_10px_rgba(59,130,246,0.1)]';
-                    else el.className = 'nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover border border-transparent rounded-xl font-medium transition';
+                    else el.className = 'nav-item flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-800 hover:bg-surface_hover border border-transparent rounded-xl font-medium transition';
                 });
 
                 const titles = { 'dashboard': 'Visão Geral ', 'extrato': 'Extrato ', 'receitas': 'Receitas ', 'despesas': 'Despesas ', 'cartoes': 'Cartões ', 'investimentos': 'Investimentos ' };
@@ -1142,10 +1183,10 @@
                     },
                     options: { 
                         responsive: true, maintainAspectRatio: false, 
-                        plugins: { legend: { position: 'bottom', labels: { color: '#E2E8F0' } } }, 
+                        plugins: { legend: { position: 'bottom', labels: { color: '#334155', usePointStyle: true, pointStyle: 'rectRounded' } } }, 
                         scales: { 
-                            y: { beginAtZero: true, grid: { color: '#1F2532' }, ticks: { color: '#94A3B8' }, border: {display:false} }, 
-                            x: { grid: { display: false }, ticks: { color: '#94A3B8' }, border: {display:false} } 
+                            y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.2)' }, ticks: { color: '#64748B' }, border: {display:false} }, 
+                            x: { grid: { display: false }, ticks: { color: '#64748B' }, border: {display:false} } 
                         } 
                     }
                 });
@@ -1252,14 +1293,14 @@
                     const isReceita = t.tipo === 'receita';
                     const isInv = t.tipo === 'investimento';
                     
-                    let valClass = 'text-white'; let signal = '-'; let icon = 'fa-receipt'; let iconColor = 'bg-slate-800 text-slate-300 border border-slate-700';
+                    let valClass = 'text-ink'; let signal = '-'; let icon = 'fa-receipt'; let iconColor = 'bg-slate-100 text-slate-500 border border-slate-200';
 
                     if (isReceita) { valClass = 'text-success'; signal = '+'; icon = 'fa-arrow-down'; iconColor = 'bg-success/10 text-success border border-success/20'; } 
                     else if (isInv) { valClass = 'text-accent'; signal = ''; icon = 'fa-chart-line'; iconColor = 'bg-accent/10 text-accent border border-accent/20'; } 
                     else {
-                        if(t.categoria === 'Mercado') { icon = 'fa-basket-shopping'; iconColor = 'bg-orange-500/10 text-orange-400 border border-orange-500/20'; }
-                        else if(t.categoria === 'Transporte') { icon = 'fa-car'; iconColor = 'bg-blue-500/10 text-blue-400 border border-blue-500/20'; }
-                        else if(t.categoria === 'Lazer') { icon = 'fa-ticket'; iconColor = 'bg-pink-500/10 text-pink-400 border border-pink-500/20'; }
+                        if(t.categoria === 'Mercado') { icon = 'fa-basket-shopping'; iconColor = 'bg-orange-500/10 text-orange-500 border border-orange-500/20'; }
+                        else if(t.categoria === 'Transporte') { icon = 'fa-car'; iconColor = 'bg-blue-500/10 text-blue-500 border border-blue-500/20'; }
+                        else if(t.categoria === 'Lazer') { icon = 'fa-ticket'; iconColor = 'bg-pink-500/10 text-pink-500 border border-pink-500/20'; }
                         if(t.cartao) { icon = 'fa-credit-card'; iconColor = 'bg-slate-700 text-white border border-slate-600'; }
                     }
                     
@@ -1267,17 +1308,17 @@
                     if (t.cartao && t.banco && t.bandeira) {
                         const iconBandeira = t.bandeira === 'Visa' ? 'fa-cc-visa' : 'fa-cc-mastercard';
                         cartaoBadge = `<span class="w-1 h-1 bg-slate-600 rounded-full"></span>
-                                       <span class="text-[10px] bg-dark text-slate-300 border border-border_color px-1.5 py-0.5 rounded font-bold uppercase">${this.esc(t.banco)}</span>
-                                       <i class="fa-brands ${iconBandeira} text-slate-300 text-sm ml-0.5"></i>`;
+                                       <span class="text-[10px] bg-dark text-slate-600 border border-border_color px-1.5 py-0.5 rounded font-bold uppercase">${this.esc(t.banco)}</span>
+                                       <i class="fa-brands ${iconBandeira} text-slate-600 text-sm ml-0.5"></i>`;
                     }
 
                     html += `
-                        <div class="flex items-center justify-between p-4 hover:bg-surface_hover active:bg-[#232C3E] transition cursor-pointer group" data-id="${this.esc(t.id)}" onclick="app.editTransaction(this.dataset.id)">
+                        <div class="flex items-center justify-between p-4 hover:bg-surface_hover active:bg-white/70 transition cursor-pointer group" data-id="${this.esc(t.id)}" onclick="app.editTransaction(this.dataset.id)">
                             <div class="flex items-center gap-4 overflow-hidden">
                                 <div class="w-11 h-11 rounded-xl ${iconColor} flex items-center justify-center shrink-0 shadow-inner"><i class="fa-solid ${icon}"></i></div>
                                 <div class="truncate">
-                                    <div class="font-bold text-sm md:text-base text-slate-100 truncate">${this.esc(t.descricao)}</div>
-                                    <div class="text-xs text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
+                                    <div class="font-bold text-sm md:text-base text-ink truncate">${this.esc(t.descricao)}</div>
+                                    <div class="text-xs text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">
                                         <span>${this.formatDate(t.data)}</span>
                                         <span class="w-1 h-1 bg-slate-600 rounded-full"></span>
                                         <span class="truncate">${this.esc(t.categoria)}</span>
@@ -1328,7 +1369,7 @@
                 document.getElementById('form-type').value = type;
                 const btns = { despesa: document.getElementById('btn-type-despesa'), receita: document.getElementById('btn-type-receita'), investimento: document.getElementById('btn-type-investimento') };
                 
-                Object.values(btns).forEach(btn => btn.className = 'flex-1 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-400 hover:text-white transition bg-transparent border border-transparent');
+                Object.values(btns).forEach(btn => btn.className = 'flex-1 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-500 hover:text-ink transition bg-transparent border border-transparent');
                 
                 const cartaoContainer = document.getElementById('cartao-container');
                 const catSelect = document.getElementById('form-categoria');
