@@ -20,6 +20,10 @@ A planilha está compartilhada como **"Qualquer pessoa com o link: leitor"** —
 2. **Arquivo → Histórico de versões → Nomear versão atual** → `Antes da Fase 0`.
 3. (Já feito) Uma exportação CSV dos 11 registros foi guardada fora do repositório durante a análise.
 
+> **Atualização (API v2.1):** se a cópia de teste já tem a v2.0, cole o `Code.gs` atual por cima, salve e publique em
+> **Implantar → Gerenciar implantações → editar → Versão: Nova versão** (a URL de teste não muda).
+> Na 1ª gravação, a API acrescenta as colunas `grupoParcela` e `atualizadoEm` ao final da `Página1`.
+
 ## Passo 2 — Ambiente de teste (cópia da planilha)
 1. **Arquivo → Fazer uma cópia** → `NexFinance TESTE`. (Use esta cópia nos passos 2–4.)
 2. Na cópia: **Extensões → Apps Script** → apague o conteúdo de `Código.gs` → cole todo o conteúdo de
@@ -51,6 +55,7 @@ A planilha está compartilhada como **"Qualquer pessoa com o link: leitor"** —
    - [ ] Desligar o Wi-Fi, criar um lançamento → indicador *Erro — 1 pendente*; religar e tocar no indicador → *Sincronizado*.
    - [ ] Aba **_Log** registra cada alteração com o estado anterior.
    - [ ] **NexFinance → Restaurar registro excluído…** com o ID de um item excluído → volta para a planilha.
+   - [ ] **Fase 2:** criar compra 3x → editar uma parcela marcando *Editar a compra inteira* (mudar o total) → as 3 linhas são recalculadas; excluir → escolher *Excluir todas as 3 parcelas*.
    - [ ] **Fase 1:** menu **Extrato** (busca e filtro por tipo); "Ver todas" abre o Extrato; gráfico mostra 6 meses (ou 12 em "Ano completo"); anos do filtro incluem todos os anos com lançamentos; ao editar, botão vermelho de lixeira exclui; no celular, ícones de editar/excluir aparecem em cada item.
 4. Ao terminar: `localStorage.removeItem('nexfinance_api_url')` no console.
 

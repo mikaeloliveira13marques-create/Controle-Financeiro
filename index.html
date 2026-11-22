@@ -102,9 +102,10 @@
             </div>
             <h3 class="text-lg font-bold text-center text-white mb-2">Atenção</h3>
             <p id="confirm-message" class="text-slate-400 text-center mb-6 text-sm">Tem certeza?</p>
-            <div class="flex gap-3">
+            <div class="flex flex-wrap gap-3">
                 <button onclick="app.closeConfirm()" class="flex-1 py-2.5 bg-surface_hover hover:bg-[#232C3E] text-slate-300 font-medium rounded-xl transition border border-border_color">Cancelar</button>
                 <button id="confirm-btn-yes" class="flex-1 py-2.5 bg-danger hover:bg-red-500 text-white font-medium rounded-xl transition shadow-[0_0_15px_rgba(239,68,68,0.3)]">Confirmar</button>
+                <button id="confirm-btn-alt" class="hidden w-full py-2.5 bg-danger/10 hover:bg-danger/20 text-danger font-medium rounded-xl transition border border-danger/30"></button>
             </div>
         </div>
     </div>
@@ -455,6 +456,15 @@
                     </div>
                 </div>
 
+                <!-- Compra parcelada: editar só a parcela ou a compra inteira -->
+                <div id="grupo-container" class="hidden p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="form-grupo" onchange="app.toggleGrupo()" class="w-5 h-5 accent-[#3B82F6] cursor-pointer">
+                        <span class="text-sm font-bold text-white">Editar a compra inteira (todas as parcelas)</span>
+                    </label>
+                    <p id="grupo-info" class="text-xs text-slate-400 mt-2"></p>
+                </div>
+
                 <!-- Credit Card Options -->
                 <div id="cartao-container" class="mt-2 p-4 bg-dark border border-border_color rounded-xl flex flex-col gap-3 cursor-pointer hover:bg-surface_hover transition" onclick="document.getElementById('form-cartao').click()">
                     <div class="flex items-center gap-3">
@@ -590,7 +600,10 @@
                     id, tipo: t.tipo, descricao, valor: Math.round(valor * 100) / 100, data,
                     categoria: String(t.categoria ?? '').slice(0, 60), cartao,
                     banco: cartao ? String(t.banco ?? '').slice(0, 40) : '',
-                    bandeira: cartao ? String(t.bandeira ?? '').slice(0, 40) : ''
+                    bandeira: cartao ? String(t.bandeira ?? '').slice(0, 40) : '',
+                    // Parcelas antigas (id "base-n") são agrupadas pelo prefixo do id.
+                    grupoParcela: /^[A-Za-z0-9_.-]{1,64}$/.test(String(t.grupoParcela ?? '')) ? String(t.grupoParcela) : ((id.match(/^(\d{10,})-\d{1,2}$/) || [])[1] || ''),
+                    atualizadoEm: Number(t.atualizadoEm) > 0 ? Number(t.atualizadoEm) : 0
                 };
             },
 
@@ -641,9 +654,16 @@
                 }, 3000);
             },
 
-            showConfirm(message, callback) {
+            /** alt (opcional): { label, yesLabel, callback } — segunda ação, ex.: "Excluir todas as parcelas". */
+            showConfirm(message, callback, alt = null) {
                 this.confirmCallback = callback;
                 document.getElementById('confirm-message').innerText = message;
+                const yes = document.getElementById('confirm-btn-yes');
+                const altBtn = document.getElementById('confirm-btn-alt');
+                yes.textContent = alt?.yesLabel || 'Confirmar';
+                altBtn.classList.toggle('hidden', !alt);
+                altBtn.textContent = alt?.label || '';
+                altBtn.onclick = () => { if (alt) alt.callback(); this.closeConfirm(); };
                 const dialog = document.getElementById('confirm-dialog');
                 const content = document.getElementById('confirm-content');
                 
@@ -664,7 +684,8 @@
                 const dialog = document.getElementById('confirm-dialog');
                 const content = document.getElementById('confirm-content');
                 dialog.classList.add('opacity-0'); content.classList.add('scale-95');
-                setTimeout(() => { dialog.classList.add('hidden'); dialog.classList.remove('flex'); this.confirmCallback = null; }, 200);
+                const cb = this.confirmCallback;
+                setTimeout(() => { if (this.confirmCallback !== cb) return; dialog.classList.add('hidden'); dialog.classList.remove('flex'); this.confirmCallback = null; }, 200);
             },
 
             gerenciarCategorias() {
@@ -809,6 +830,15 @@
                 });
             },
 
+            /** Atualiza a versão local (e das operações pendentes) após o servidor confirmar a gravação. */
+            applyVersions(versions) {
+                this.data.transactions.forEach(t => { if (versions[t.id]) t.atualizadoEm = versions[t.id]; });
+                this.queue.slice(1).forEach(op => {
+                    if (op.action === 'upsert') op.payload.records.forEach(r => { if (versions[r.id] && r.versao !== undefined) r.versao = versions[r.id]; });
+                });
+                this.saveCache();
+            },
+
             async processQueue() {
                 if (this.syncing || !this.queue.length) return;
                 if (!this.token) { this.setSyncState('auth'); return; }
@@ -819,8 +849,16 @@
                     while (this.queue.length) {
                         const op = this.queue[0];
                         try {
-                            await this.api(op.action, op.payload);
+                            const res = await this.api(op.action, op.payload);
+                            if (op.action === 'upsert' && res.versions) this.applyVersions(res.versions);
                         } catch (e) {
+                            if (e.code === 'CONFLICT') {
+                                this.queue.shift(); this.saveQueue();
+                                this.showToast('Este registro foi alterado ou excluído em outro dispositivo. Os dados foram recarregados; refaça a alteração se necessário.', 'error');
+                                this.syncing = false;
+                                await this.loadData();
+                                return;
+                            }
                             if (e.code === 'VALIDATION' || e.code === 'BAD_REQUEST') {
                                 // O servidor recusou a operação: descarta e recarrega o estado real da planilha.
                                 this.queue.shift(); this.saveQueue();
@@ -1332,6 +1370,8 @@
                 
                 this.setFormType(openType);
                 document.getElementById('modal-delete').classList.add('hidden');
+                document.getElementById('grupo-container').classList.add('hidden');
+                document.getElementById('form-grupo').checked = false;
                 document.getElementById('modal-title').innerText = 'Novo Registro';
             },
 
@@ -1352,26 +1392,37 @@
                 if (valor <= 0) return this.showToast("O valor deve ser maior que zero.", "error");
 
                 const records = [];
+                const editGroup = !!id && document.getElementById('form-grupo').checked;
                 if (id) {
-                    if (!this.data.transactions.some(t => String(t.id) === String(id))) return this.showToast("Registro não encontrado. Recarregue os dados.", "error");
-                    records.push({ id, tipo, descricao, valor, data: dataStr, categoria, cartao, banco, bandeira });
-                } else if (cartao && parcelas > 1) {
-                    const valParcela = Math.floor((valor / parcelas) * 100) / 100;
-                    const remainder = Math.round((valor - (valParcela * parcelas)) * 100) / 100;
-                    const baseId = Date.now().toString();
-                    for (let i = 0; i < parcelas; i++) {
-                        let pValor = valParcela;
-                        if (i === 0) pValor = Math.round((pValor + remainder) * 100) / 100;
-                        records.push({
-                            id: `${baseId}-${i}`, tipo, descricao: `${descricao} (${i + 1}/${parcelas})`, valor: pValor,
-                            data: this.shiftMonth(dataStr, i), categoria, cartao, banco, bandeira
-                        });
+                    const atual = this.data.transactions.find(t => String(t.id) === String(id));
+                    if (!atual) return this.showToast("Registro não encontrado. Recarregue os dados.", "error");
+                    if (editGroup) {
+                        // Regera a compra inteira: mesmo nº de parcelas e mesmos IDs, valor total redistribuído.
+                        const grupo = this.getGroup(atual);
+                        const base = descricao.replace(/\s*\(\d+\/\d+\)$/, '');
+                        this.splitInstallments(valor, grupo.length).forEach((pValor, i) => records.push({
+                            id: grupo[i].id, tipo, descricao: `${base} (${i + 1}/${grupo.length})`, valor: pValor,
+                            data: this.shiftMonth(dataStr, i), categoria, cartao, banco, bandeira,
+                            grupoParcela: atual.grupoParcela, versao: grupo[i].atualizadoEm || 0
+                        }));
+                    } else {
+                        records.push({ id, tipo, descricao, valor, data: dataStr, categoria, cartao, banco, bandeira, grupoParcela: atual.grupoParcela, versao: atual.atualizadoEm || 0 });
                     }
+                } else if (cartao && parcelas > 1) {
+                    const baseId = Date.now().toString();
+                    this.splitInstallments(valor, parcelas).forEach((pValor, i) => records.push({
+                        id: `${baseId}-${i}`, tipo, descricao: `${descricao} (${i + 1}/${parcelas})`, valor: pValor,
+                        data: this.shiftMonth(dataStr, i), categoria, cartao, banco, bandeira, grupoParcela: baseId
+                    }));
                 } else {
                     records.push({ id: Date.now().toString(), tipo, descricao, valor, data: dataStr, categoria, cartao, banco, bandeira });
                 }
 
-                const clean = records.map(r => this.normalizeTransaction(r));
+                const clean = records.map(r => {
+                    const n = this.normalizeTransaction(r);
+                    if (n && r.versao !== undefined) n.versao = r.versao; // versão conhecida, para detectar conflitos
+                    return n;
+                });
                 if (clean.some(r => !r)) return this.showToast("Dados inválidos. Verifique descrição, valor e data.", "error");
 
                 clean.forEach(r => {
@@ -1379,8 +1430,39 @@
                     if (idx >= 0) this.data.transactions[idx] = r; else this.data.transactions.push(r);
                 });
                 this.enqueue('upsert', { records: clean });
-                this.showToast(id ? 'Atualizado — sincronizando…' : (clean.length > 1 ? `Adicionado em ${clean.length} parcelas — sincronizando…` : 'Registro adicionado — sincronizando…'));
+                this.showToast(id ? (editGroup ? `Compra atualizada (${clean.length} parcelas) — sincronizando…` : 'Atualizado — sincronizando…') : (clean.length > 1 ? `Adicionado em ${clean.length} parcelas — sincronizando…` : 'Registro adicionado — sincronizando…'));
                 this.renderCurrentView(); this.closeModal();
+            },
+
+            /** Divide um total em n parcelas; os centavos restantes vão para a 1ª. */
+            splitInstallments(total, n) {
+                const base = Math.floor((total / n) * 100) / 100;
+                const resto = Math.round((total - base * n) * 100) / 100;
+                return Array.from({ length: n }, (_, i) => i === 0 ? Math.round((base + resto) * 100) / 100 : base);
+            },
+
+            /** Parcelas da mesma compra, em ordem de data. */
+            getGroup(t) {
+                if (!t || !t.grupoParcela) return t ? [t] : [];
+                return this.data.transactions.filter(x => x.grupoParcela === t.grupoParcela).sort((a, b) => a.data.localeCompare(b.data) || a.id.localeCompare(b.id));
+            },
+
+            /** Alterna o formulário entre editar só a parcela e editar a compra inteira. */
+            toggleGrupo() {
+                const t = this.data.transactions.find(x => x.id === document.getElementById('form-id').value);
+                if (!t) return;
+                const grupo = this.getGroup(t);
+                const todos = document.getElementById('form-grupo').checked;
+                const total = Math.round(grupo.reduce((s, x) => s + x.valor, 0) * 100) / 100;
+                document.getElementById('form-descricao').value = todos ? t.descricao.replace(/\s*\(\d+\/\d+\)$/, '') : t.descricao;
+                document.getElementById('form-valor').value = todos ? total : t.valor;
+                document.getElementById('form-data').value = todos ? grupo[0].data : t.data;
+                const sel = document.getElementById('form-parcelas');
+                if (![...sel.options].some(o => o.value === String(grupo.length))) sel.add(new Option(`${grupo.length}x`, String(grupo.length)));
+                sel.value = String(grupo.length); // apenas informativo (campo bloqueado na edição)
+                document.getElementById('grupo-info').innerText = todos
+                    ? `O valor é o total da compra e a data é a da 1ª parcela. As ${grupo.length} parcelas serão recalculadas.`
+                    : `Parcela ${grupo.findIndex(x => x.id === t.id) + 1} de ${grupo.length}. Total da compra: ${this.formatCurrency(total)}.`;
             },
 
             editTransaction(id) {
@@ -1413,17 +1495,31 @@
                 document.getElementById('form-parcelas').disabled = true;
                 
                 this.toggleCartaoOpcoes();
+                const grupo = this.getGroup(t);
+                document.getElementById('form-grupo').checked = false;
+                document.getElementById('grupo-container').classList.toggle('hidden', grupo.length < 2);
+                if (grupo.length > 1) this.toggleGrupo();
             },
 
             deleteTransaction(id, fromModal = false) {
                 if (!id) return;
-                this.showConfirm("Deseja excluir este registro?", () => {
+                const t = this.data.transactions.find(x => x.id === String(id));
+                const grupo = this.getGroup(t);
+                const excluir = (ids) => {
                     if (fromModal) this.closeModal();
-                    this.data.transactions = this.data.transactions.filter(t => String(t.id) !== String(id));
-                    this.enqueue('delete', { ids: [String(id)] });
-                    this.renderCurrentView(); 
-                    this.showToast("Excluído — sincronizando…");
-                });
+                    const set = new Set(ids);
+                    this.data.transactions = this.data.transactions.filter(x => !set.has(x.id));
+                    this.enqueue('delete', { ids });
+                    this.renderCurrentView();
+                    this.showToast(ids.length > 1 ? `${ids.length} parcelas excluídas — sincronizando…` : "Excluído — sincronizando…");
+                };
+                if (grupo.length > 1) {
+                    this.showConfirm(`Este lançamento é a parcela ${grupo.findIndex(x => x.id === t.id) + 1} de ${grupo.length} de uma compra. O que deseja excluir?`,
+                        () => excluir([String(id)]),
+                        { yesLabel: 'Só esta parcela', label: `Excluir todas as ${grupo.length} parcelas`, callback: () => excluir(grupo.map(x => x.id)) });
+                } else {
+                    this.showConfirm("Deseja excluir este registro?", () => excluir([String(id)]));
+                }
             },
 
             exportBackup() {

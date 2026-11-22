@@ -14,14 +14,14 @@
  * Implantação: veja docs/IMPLANTACAO-FASE0.md
  */
 
-const API_VERSION = '2.0.0';
+const API_VERSION = '2.1.0';
 const SHEET_NAME = 'Página1';
 const CONFIG_SHEET = 'Config';
 const LOG_SHEET = '_Log';
 const BACKUP_FOLDER = 'NexFinance Backups';
 const BACKUP_KEEP = 30;
 
-const FIELDS = ['id', 'tipo', 'descricao', 'valor', 'data', 'categoria', 'cartao', 'banco', 'bandeira'];
+const FIELDS = ['id', 'tipo', 'descricao', 'valor', 'data', 'categoria', 'cartao', 'banco', 'bandeira', 'grupoParcela', 'atualizadoEm'];
 const REQUIRED_COLUMNS = ['id', 'tipo', 'descricao', 'valor', 'data'];
 const TIPOS = ['receita', 'despesa', 'investimento'];
 
@@ -174,6 +174,8 @@ function rowToObject_(headers, row, tz) {
   obj.cartao = parseBool_(obj.cartao);
   obj.banco = String(obj.banco == null ? '' : obj.banco);
   obj.bandeira = String(obj.bandeira == null ? '' : obj.bandeira);
+  obj.grupoParcela = normId_(obj.grupoParcela);
+  obj.atualizadoEm = Number(obj.atualizadoEm) || 0;
   return obj;
 }
 
@@ -238,13 +240,30 @@ function upsert_(records) {
     if (id && !(id in index)) index[id] = i;
   });
 
+  // Controle de concorrência: se o cliente informa a versão que conhecia ("versao"),
+  // o registro só é gravado se ninguém o alterou ou excluiu desde então.
+  const verCol = headers.indexOf('atualizadoEm');
+  const conflitos = order.filter(function (id) {
+    const rec = byId[id];
+    if (rec.versao === null) return false;
+    const pos = index[id];
+    if (pos === undefined) return rec.versao > 0; // excluído em outro dispositivo
+    return (Number(rows[pos][verCol]) || 0) !== rec.versao;
+  });
+  if (conflitos.length) throw err_('CONFLICT', 'Registro alterado ou excluído em outro dispositivo: ' + conflitos.join(', '));
+
   const log = [];
   const appends = [];
+  const versions = {};
   let created = 0;
   let updated = 0;
+  let stamp = Date.now();
 
   order.forEach(function (id) {
     const rec = byId[id];
+    rec.atualizadoEm = stamp++;
+    versions[id] = rec.atualizadoEm;
+    delete rec.versao;
     const pos = index[id];
     if (pos !== undefined) {
       const before = rows[pos];
@@ -263,7 +282,7 @@ function upsert_(records) {
 
   if (appends.length) sh.getRange(lastRow + 1, 1, appends.length, headers.length).setValues(appends);
   writeLog_(log);
-  return { ok: true, created: created, updated: updated };
+  return { ok: true, created: created, updated: updated, versions: versions };
 }
 
 function remove_(ids) {
@@ -314,6 +333,13 @@ function validateRecord_(r, i) {
   const descricao = cleanText_(r.descricao, 200);
   if (!descricao) throw err_('VALIDATION', p + 'descrição obrigatória.');
   const cartao = r.cartao === true;
+  const grupo = normId_(r.grupoParcela);
+  if (grupo && !/^[A-Za-z0-9_.-]{1,64}$/.test(grupo)) throw err_('VALIDATION', p + 'grupo de parcelas inválido.');
+  let versao = null;
+  if (r.versao !== undefined && r.versao !== null) {
+    versao = Number(r.versao);
+    if (!isFinite(versao) || versao < 0) throw err_('VALIDATION', p + 'versão inválida.');
+  }
 
   return {
     id: id,
@@ -324,7 +350,9 @@ function validateRecord_(r, i) {
     categoria: cleanText_(r.categoria, 60),
     cartao: cartao,
     banco: cartao ? cleanText_(r.banco, 40) : '',
-    bandeira: cartao ? cleanText_(r.bandeira, 40) : ''
+    bandeira: cartao ? cleanText_(r.bandeira, 40) : '',
+    grupoParcela: grupo,
+    versao: versao
   };
 }
 
@@ -343,6 +371,8 @@ function cleanText_(v, max) {
 /** Converte um campo para o valor gravado na célula. */
 function toCell_(field, value) {
   if (field === 'valor') return Number(value);
+  if (field === 'atualizadoEm') return Number(value) || '';
+  if (field === 'grupoParcela') return value ? String(value) : '';
   if (field === 'cartao') return value === true;
   if (field === 'id' || field === 'data' || field === 'tipo') return String(value);
   const s = String(value == null ? '' : value);
@@ -622,6 +652,8 @@ function restaurarExcluido_(id) {
         if (exists) return 'O registro ' + id + ' já existe na planilha.';
         const before = JSON.parse(rows[i][3]);
         const rec = validateRecord_(rowToObject_(Object.keys(before), Object.keys(before).map(function (k) { return before[k]; }), tz), 0);
+        rec.atualizadoEm = Date.now();
+        delete rec.versao;
         sh.appendRow(headers.map(function (h) { return FIELDS.indexOf(h) >= 0 ? toCell_(h, rec[h]) : (before[h] || ''); }));
         writeLog_([['restore', id, '', JSON.stringify(rec)]]);
         return 'Registro ' + id + ' restaurado.';

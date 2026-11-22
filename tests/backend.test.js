@@ -179,3 +179,31 @@ test('verificarDados aponta duplicidades e registros inválidos', () => {
   assert.match(msg, /ID duplicado 1700000000001/);
   assert.match(msg, /valor inválido/);
 });
+
+test('Fase 2: versões, conflito entre dispositivos e grupo de parcelas', () => {
+  const env = loggedEnv();
+  const rec = { id: '1700000000002', tipo: 'despesa', descricao: 'Aluguel A', valor: 1000, data: '2026-10-06', categoria: 'Moradia' };
+  // Registro antigo (sem atualizadoEm) aceita versao 0; colunas novas são acrescentadas ao final.
+  const r1 = env.post({ action: 'upsert', token: env.token, records: [{ ...rec, versao: 0 }] });
+  assert.equal(r1.ok, true);
+  const v1 = r1.versions['1700000000002'];
+  assert.ok(v1 > 0);
+  assert.deepEqual(env.book.sheets['Página1'].rows[0].slice(-2), ['grupoParcela', 'atualizadoEm']);
+  // Outro dispositivo grava com a versão atual → ok; o primeiro, com a versão antiga → CONFLICT, sem gravar.
+  assert.equal(env.post({ action: 'upsert', token: env.token, records: [{ ...rec, descricao: 'Aluguel B', versao: v1 }] }).ok, true);
+  const c = env.post({ action: 'upsert', token: env.token, records: [{ ...rec, descricao: 'Aluguel C', versao: v1 }] });
+  assert.equal(c.code, 'CONFLICT');
+  assert.equal(env.post({ action: 'list', token: env.token }).transactions.find(t => t.id === '1700000000002').descricao, 'Aluguel B');
+  // Editar um registro excluído em outro dispositivo não o recria.
+  env.post({ action: 'delete', token: env.token, ids: ['1700000000003'] });
+  assert.equal(env.post({ action: 'upsert', token: env.token, records: [{ id: '1700000000003', tipo: 'despesa', descricao: 'x', valor: 1, data: '2026-10-31', versao: 5 }] }).code, 'CONFLICT');
+  // Sem versao (importação) grava sem checar; grupoParcela é persistido.
+  const g = env.post({ action: 'upsert', token: env.token, records: [
+    { id: '1800000000000-0', tipo: 'despesa', descricao: 'TV (1/2)', valor: 50, data: '2026-11-01', cartao: true, grupoParcela: '1800000000000' },
+    { id: '1800000000000-1', tipo: 'despesa', descricao: 'TV (2/2)', valor: 50, data: '2026-12-01', cartao: true, grupoParcela: '1800000000000' }
+  ] });
+  assert.equal(g.created, 2);
+  const tv = env.post({ action: 'list', token: env.token }).transactions.filter(t => t.grupoParcela === '1800000000000');
+  assert.equal(tv.length, 2);
+  assert.ok(tv.every(t => t.atualizadoEm > 0));
+});

@@ -271,6 +271,75 @@ async function addTransaction(page, { descricao, valor, data = '2026-11-10' }) {
     await context.close();
   });
 
+  await t.test('Fase 2: compra parcelada editada e excluída como um todo', async () => {
+    const { page, env, context } = await setup(browser);
+    await login(page);
+    await page.waitForFunction(() => app.queue.length === 0 && document.getElementById('sync-text').textContent === 'Sincronizado');
+    await page.evaluate(() => app.openModal());
+    await page.fill('#form-descricao', 'TV teste');
+    await page.fill('#form-valor', '100');
+    await page.fill('#form-data', '2026-11-10');
+    await page.check('#form-cartao', { force: true });
+    await page.evaluate(() => { document.getElementById('form-cartao').checked = true; app.toggleCartaoOpcoes(); });
+    await page.selectOption('#form-parcelas', '3');
+    await page.evaluate(() => app.saveTransaction());
+    await page.waitForFunction(() => app.queue.length === 0 && document.getElementById('sync-text').textContent === 'Sincronizado');
+    let tv = rows(env).filter(r => String(r[2]).startsWith('TV teste'));
+    assert.deepEqual(tv.map(r => r[3]), [33.34, 33.33, 33.33]);
+    const grupo = String(tv[0][9]);
+    assert.ok(grupo && tv.every(r => String(r[9]) === grupo), 'mesmo grupoParcela');
+    const ids = tv.map(r => String(r[0]));
+
+    // Editar a 2ª parcela como compra inteira: novo total 150, mesma quantidade e mesmos IDs
+    await page.evaluate(id => app.editTransaction(id), ids[1]);
+    assert.equal(await page.isVisible('#grupo-container'), true);
+    await page.check('#form-grupo');
+    assert.equal(await page.inputValue('#form-valor'), '100');
+    assert.equal(await page.inputValue('#form-descricao'), 'TV teste');
+    await page.fill('#form-valor', '150');
+    await page.fill('#form-descricao', 'TV sala');
+    await page.evaluate(() => app.saveTransaction());
+    await page.waitForFunction(() => app.queue.length === 0 && document.getElementById('sync-text').textContent === 'Sincronizado');
+    tv = rows(env).filter(r => String(r[9]) === grupo);
+    assert.deepEqual(tv.map(r => String(r[0])), ids);
+    assert.deepEqual(tv.map(r => r[3]), [50, 50, 50]);
+    assert.deepEqual(tv.map(r => r[2]), ['TV sala (1/3)', 'TV sala (2/3)', 'TV sala (3/3)']);
+
+    // Editar só uma parcela não altera as outras
+    await page.evaluate(id => app.editTransaction(id), ids[2]);
+    await page.fill('#form-valor', '55');
+    await page.evaluate(() => app.saveTransaction());
+    await page.waitForFunction(() => app.queue.length === 0 && document.getElementById('sync-text').textContent === 'Sincronizado');
+    assert.deepEqual(rows(env).filter(r => String(r[9]) === grupo).map(r => r[3]), [50, 50, 55]);
+
+    // Excluir todas as parcelas
+    await page.evaluate(id => app.deleteTransaction(id), ids[0]);
+    await page.click('#confirm-btn-alt');
+    await page.waitForFunction(() => app.queue.length === 0 && document.getElementById('sync-text').textContent === 'Sincronizado');
+    assert.equal(rows(env).filter(r => String(r[9]) === grupo).length, 0);
+    assert.equal(rows(env).length, 2, 'registros originais intactos');
+    assert.deepEqual(page.errors, []);
+    await context.close();
+  });
+
+  await t.test('Fase 2: edição concorrente de outro dispositivo é detectada', async () => {
+    const { page, env, context } = await setup(browser);
+    await login(page);
+    await page.waitForFunction(() => app.queue.length === 0 && document.getElementById('sync-text').textContent === 'Sincronizado');
+    // Outro dispositivo altera o aluguel depois que esta tela carregou
+    env.post({ action: 'upsert', token: env.token || (env.token = env.post({ action: 'login', pin: PIN }).token), records: [
+      { id: '1700000000002', tipo: 'despesa', descricao: 'Aluguel (outro aparelho)', valor: 1100, data: '2026-11-06', categoria: 'Moradia' }] });
+    await page.evaluate(() => app.editTransaction('1700000000002'));
+    await page.fill('#form-valor', '999');
+    await page.evaluate(() => app.saveTransaction());
+    await page.waitForFunction(() => document.getElementById('toast-container').textContent.includes('outro dispositivo'));
+    await page.waitForFunction(() => app.queue.length === 0 && document.getElementById('sync-text').textContent === 'Sincronizado');
+    const r = rows(env).find(x => String(x[0]) === '1700000000002');
+    assert.equal(r[3], 1100, 'a alteração do outro aparelho foi preservada');
+    assert.equal(await page.evaluate(() => app.data.transactions.find(t => t.id === '1700000000002').descricao), 'Aluguel (outro aparelho)');
+    await context.close();
+  });
+
   await t.test('backup com registro inválido é recusado sem alterar nada', async () => {
     const { page, env, context } = await setup(browser);
     await login(page);
