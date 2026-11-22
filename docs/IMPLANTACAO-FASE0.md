@@ -51,6 +51,7 @@ A planilha está compartilhada como **"Qualquer pessoa com o link: leitor"** —
    - [ ] Desligar o Wi-Fi, criar um lançamento → indicador *Erro — 1 pendente*; religar e tocar no indicador → *Sincronizado*.
    - [ ] Aba **_Log** registra cada alteração com o estado anterior.
    - [ ] **NexFinance → Restaurar registro excluído…** com o ID de um item excluído → volta para a planilha.
+   - [ ] **Fase 1:** menu **Extrato** (busca e filtro por tipo); "Ver todas" abre o Extrato; gráfico mostra 6 meses (ou 12 em "Ano completo"); anos do filtro incluem todos os anos com lançamentos; ao editar, botão vermelho de lixeira exclui; no celular, ícones de editar/excluir aparecem em cada item.
 4. Ao terminar: `localStorage.removeItem('nexfinance_api_url')` no console.
 
 ## Passo 5 — Preparar o Apps Script da planilha ORIGINAL

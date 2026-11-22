@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0A0D14">
     <title>Meu Controle Financeiro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
@@ -74,7 +74,9 @@
             -webkit-backdrop-filter: blur(20px);
         }
         
-        .fab:active { transform: scale(0.95); }
+        .hide-scroll { scrollbar-width: none; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .fab-btn:active { transform: scale(0.95); }
         .view-section { display: none; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .view-section.active { display: block; }
 
@@ -99,7 +101,7 @@
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
             <h3 class="text-lg font-bold text-center text-white mb-2">Atenção</h3>
-            <p id="confirm-message" class="text-slate-400 text-center mb-6 text-sm">Tem a certeza?</p>
+            <p id="confirm-message" class="text-slate-400 text-center mb-6 text-sm">Tem certeza?</p>
             <div class="flex gap-3">
                 <button onclick="app.closeConfirm()" class="flex-1 py-2.5 bg-surface_hover hover:bg-[#232C3E] text-slate-300 font-medium rounded-xl transition border border-border_color">Cancelar</button>
                 <button id="confirm-btn-yes" class="flex-1 py-2.5 bg-danger hover:bg-red-500 text-white font-medium rounded-xl transition shadow-[0_0_15px_rgba(239,68,68,0.3)]">Confirmar</button>
@@ -111,7 +113,7 @@
     <div id="category-modal" class="fixed inset-0 bg-dark/80 backdrop-blur-md z-[95] hidden items-center justify-center transition-opacity opacity-0">
         <div class="bg-surface border border-border_color rounded-2xl p-5 w-11/12 max-w-sm mx-auto shadow-2xl transform scale-95 transition-transform duration-200 relative" id="category-content">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-white">Gerir Categorias</h3>
+                <h3 class="text-lg font-bold text-white">Gerenciar Categorias</h3>
                 <button onclick="app.fecharCategorias()" class="text-slate-400 hover:text-white w-8 h-8 rounded-full flex items-center justify-center transition bg-surface_hover"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="flex gap-2 mb-4">
@@ -130,12 +132,12 @@
                 <i class="fa-solid fa-wallet -rotate-3"></i>
             </div>
             <h2 class="text-2xl font-bold mb-2 text-white">NexFinance</h2>
-            <p class="text-slate-400 mb-8 text-sm">Digite o seu PIN para aceder.</p>
+            <p class="text-slate-400 mb-8 text-sm">Digite seu PIN para acessar.</p>
             <div class="relative max-w-[200px] mx-auto mb-6">
                 <input type="password" id="pin-input" aria-label="PIN de acesso" autocomplete="current-password" class="w-full text-center text-2xl tracking-[0.3em] p-4 bg-dark border border-border_color text-white rounded-2xl focus:outline-none focus:border-primary focus:shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all font-mono" placeholder="••••••" maxlength="64">
             </div>
             <button id="pin-btn" onclick="app.login()" class="w-full bg-primary text-white font-bold py-4 rounded-2xl hover:bg-primary_dark active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(59,130,246,0.4)] disabled:opacity-60 disabled:cursor-wait">
-                Aceder ao Sistema
+                Acessar o Sistema
             </button>
             <p id="pin-error" class="text-danger text-sm mt-4 hidden font-medium" role="alert">PIN incorreto.</p>
         </div>
@@ -155,6 +157,7 @@
             
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto" id="main-nav">
                 <a href="#" onclick="app.navigate('dashboard')" data-view="dashboard" class="nav-item active flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary border border-primary/20 rounded-xl font-medium transition"><i class="fa-solid fa-house w-5 text-center"></i> Dashboard</a>
+                <a href="#" onclick="app.navigate('extrato')" data-view="extrato" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-list w-5 text-center"></i> Extrato</a>
                 <a href="#" onclick="app.navigate('receitas')" data-view="receitas" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-arrow-up w-5 text-center"></i> Receitas</a>
                 <a href="#" onclick="app.navigate('despesas')" data-view="despesas" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-solid fa-arrow-down w-5 text-center"></i> Despesas</a>
                 <a href="#" onclick="app.navigate('cartoes')" data-view="cartoes" class="nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover rounded-xl font-medium transition"><i class="fa-regular fa-credit-card w-5 text-center"></i> Cartões</a>
@@ -183,16 +186,14 @@
                         <span id="sync-text">Conectando…</span>
                     </button>
                     <button onclick="app.openModal()" class="hidden md:flex bg-primary hover:bg-primary_dark text-white font-medium rounded-xl text-sm px-5 py-2.5 transition shadow-[0_0_15px_rgba(59,130,246,0.3)] items-center gap-2 border border-primary/50">
-                        <i class="fa-solid fa-plus"></i> Novo Registo
+                        <i class="fa-solid fa-plus"></i> Novo Registro
                     </button>
                 </div>
 
                 <div class="flex items-center gap-2 px-4 pb-4 md:px-8 w-full overflow-x-auto hide-scroll">
-                    <select id="filter-year" class="bg-surface border border-border_color text-slate-200 text-sm md:text-base rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block p-2.5 font-medium outline-none transition" onchange="app.renderCurrentView()">
-                        <option value="2026">2026</option>
-                        <option value="2027">2027</option>
+                    <select id="filter-year" aria-label="Ano" class="bg-surface border border-border_color text-slate-200 text-sm md:text-base rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block p-2.5 font-medium outline-none transition" onchange="app.renderCurrentView()">
                     </select>
-                    <select id="filter-month" class="bg-surface border border-border_color text-slate-200 text-sm md:text-base rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block p-2.5 font-medium outline-none flex-1 min-w-[120px] transition" onchange="app.renderCurrentView()">
+                    <select id="filter-month" aria-label="Mês" class="bg-surface border border-border_color text-slate-200 text-sm md:text-base rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block p-2.5 font-medium outline-none flex-1 min-w-[120px] transition" onchange="app.renderCurrentView()">
                         <option value="0">Janeiro</option>
                         <option value="1">Fevereiro</option>
                         <option value="2">Março</option>
@@ -239,16 +240,16 @@
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="card p-5 md:p-6 lg:col-span-2">
-                            <h3 class="font-bold text-white mb-4 text-sm md:text-base flex items-center gap-2"><i class="fa-solid fa-chart-simple text-primary"></i> Evolução Financeira</h3>
+                            <h3 class="font-bold text-white mb-4 text-sm md:text-base flex items-center gap-2"><i class="fa-solid fa-chart-simple text-primary"></i> Evolução Financeira <span id="chart-subtitle" class="text-xs font-medium text-slate-500 ml-1"></span></h3>
                             <div class="relative h-48 md:h-64 w-full"><canvas id="mainChart"></canvas></div>
                         </div>
                         
                         <div class="card flex flex-col justify-between p-6 bg-gradient-to-br from-surface to-dark relative overflow-hidden">
                             <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-accent/5 rounded-full blur-3xl"></div>
                             <div class="relative z-10">
-                                <div class="text-slate-400 text-sm font-medium mb-2 flex justify-between items-center">Fatura Cartão <i class="fa-brands fa-cc-mastercard text-2xl text-slate-500"></i></div>
+                                <div class="text-slate-400 text-sm font-medium mb-2 flex justify-between items-center">Compras no Cartão <i class="fa-brands fa-cc-mastercard text-2xl text-slate-500"></i></div>
                                 <div class="text-3xl font-bold text-white mb-1" id="dash-cartao">R$ 0,00</div>
-                                <div class="text-xs text-slate-500">Estimativa do mês atual</div>
+                                <div class="text-xs text-slate-500">Lançadas no período selecionado</div>
                             </div>
                             <button onclick="app.navigate('cartoes')" class="mt-6 w-full py-2.5 bg-surface_hover border border-border_color text-slate-300 rounded-xl text-sm font-bold hover:bg-[#232C3E] hover:text-white transition">Ver Detalhes</button>
                         </div>
@@ -257,7 +258,7 @@
                     <div class="card p-0 overflow-hidden border-border_color">
                         <div class="p-4 md:p-5 border-b border-border_color flex justify-between items-center bg-surface/50">
                             <h3 class="font-bold text-white text-sm md:text-base">Últimas Movimentações</h3>
-                            <button onclick="app.navigate('despesas')" class="text-xs font-bold text-primary hover:text-primary_dark transition">Ver todas <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                            <button onclick="app.navigate('extrato')" class="text-xs font-bold text-primary hover:text-primary_dark transition">Ver todas <i class="fa-solid fa-arrow-right ml-1"></i></button>
                         </div>
                         <div class="divide-y divide-border_color" id="dash-transactions-list"></div>
                     </div>
@@ -313,7 +314,7 @@
                         <div class="card p-6 bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700 shadow-xl relative overflow-hidden rounded-2xl flex flex-col justify-between min-h-[160px]">
                             <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
                             <div class="flex justify-between items-start relative z-10">
-                                <span class="text-slate-400 font-medium text-sm tracking-widest uppercase">Fatura Atual</span>
+                                <span class="text-slate-400 font-medium text-sm tracking-widest uppercase">Compras no Período</span>
                                 <div class="flex gap-2 text-2xl text-slate-500">
                                     <i class="fa-brands fa-cc-visa"></i>
                                     <i class="fa-brands fa-cc-mastercard"></i>
@@ -337,12 +338,41 @@
                     </div>
                 </div>
 
+                <!-- VIEW: EXTRATO -->
+                <div id="view-extrato" class="view-section max-w-4xl mx-auto space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+                        <div class="card p-3 md:p-4 min-w-0 flex sm:block justify-between items-center"><div class="text-success text-xs font-bold sm:mb-1">Receitas</div><div class="text-base md:text-xl font-bold text-white whitespace-nowrap" id="ext-rec">R$ 0,00</div></div>
+                        <div class="card p-3 md:p-4 min-w-0 flex sm:block justify-between items-center"><div class="text-danger text-xs font-bold sm:mb-1">Despesas</div><div class="text-base md:text-xl font-bold text-white whitespace-nowrap" id="ext-desp">R$ 0,00</div></div>
+                        <div class="card p-3 md:p-4 min-w-0 flex sm:block justify-between items-center"><div class="text-accent text-xs font-bold sm:mb-1">Investimentos</div><div class="text-base md:text-xl font-bold text-white whitespace-nowrap" id="ext-inv">R$ 0,00</div></div>
+                    </div>
+                    <div class="card p-4 flex flex-col md:flex-row gap-3">
+                        <div class="relative flex-1">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-magnifying-glass"></i></div>
+                            <input type="search" id="ext-busca" oninput="app.renderCurrentView()" aria-label="Buscar lançamentos" placeholder="Buscar por descrição ou categoria…" class="w-full pl-10 pr-3 py-2.5 bg-dark border border-border_color rounded-xl text-white outline-none focus:border-primary transition">
+                        </div>
+                        <select id="ext-tipo" onchange="app.renderCurrentView()" aria-label="Filtrar por tipo" class="bg-dark border border-border_color text-slate-200 rounded-xl p-2.5 outline-none focus:border-primary transition">
+                            <option value="">Todos os tipos</option>
+                            <option value="receita">Receitas</option>
+                            <option value="despesa">Despesas</option>
+                            <option value="investimento">Investimentos</option>
+                            <option value="cartao">Compras no cartão</option>
+                        </select>
+                    </div>
+                    <div class="card p-0 overflow-hidden">
+                        <div class="p-4 border-b border-border_color bg-surface/50 flex justify-between items-center">
+                            <h3 class="font-bold text-white">Movimentações</h3>
+                            <span class="text-xs text-slate-400" id="ext-count"></span>
+                        </div>
+                        <div class="divide-y divide-border_color" id="ext-list"></div>
+                    </div>
+                </div>
+
                 <!-- VIEW: INVESTIMENTOS -->
                 <div id="view-investimentos" class="view-section max-w-4xl mx-auto space-y-6">
                     <div class="grid grid-cols-2 gap-4">
                         <div class="card flex flex-col justify-center p-6 border-accent/20 relative overflow-hidden">
                             <div class="absolute right-0 top-0 w-32 h-32 bg-accent/10 blur-3xl"></div>
-                            <div class="text-accent text-sm font-bold mb-1 relative z-10"><i class="fa-solid fa-chart-pie mr-2"></i>Aportes (Mês)</div>
+                            <div class="text-accent text-sm font-bold mb-1 relative z-10"><i class="fa-solid fa-chart-pie mr-2"></i>Aportes no Período</div>
                             <div class="text-2xl md:text-3xl font-black text-white break-words relative z-10" id="inv-total">R$ 0,00</div>
                         </div>
                         <div class="card flex flex-col justify-center p-6 border-border_color">
@@ -361,7 +391,7 @@
 
             </div>
             
-            <button onclick="app.openModal()" class="fab md:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-2xl shadow-[0_0_20px_rgba(59,130,246,0.5)] flex items-center justify-center text-2xl z-30 transition-transform">
+            <button onclick="app.openModal()" class="fab-btn md:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-2xl shadow-[0_0_20px_rgba(59,130,246,0.5)] flex items-center justify-center text-2xl z-30 transition-transform">
                 <i class="fa-solid fa-plus"></i>
             </button>
         </main>
@@ -374,7 +404,7 @@
             <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mt-3 mb-1 md:hidden"></div>
             
             <div class="px-5 py-4 border-b border-border_color flex justify-between items-center shrink-0 bg-surface/50">
-                <h3 class="font-bold text-lg text-white" id="modal-title">Novo Registo</h3>
+                <h3 class="font-bold text-lg text-white" id="modal-title">Novo Registro</h3>
                 <button onclick="app.closeModal()" class="text-slate-400 hover:text-white bg-surface_hover hover:bg-[#232C3E] w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
@@ -419,7 +449,7 @@
                             </select>
                             <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-chevron-down text-xs"></i></div>
                         </div>
-                        <button type="button" onclick="app.gerenciarCategorias()" class="w-[50px] h-[50px] bg-dark border border-border_color text-slate-400 hover:bg-surface_hover hover:text-white hover:border-primary/50 rounded-xl flex items-center justify-center transition shrink-0" title="Gerir Categorias">
+                        <button type="button" onclick="app.gerenciarCategorias()" class="w-[50px] h-[50px] bg-dark border border-border_color text-slate-400 hover:bg-surface_hover hover:text-white hover:border-primary/50 rounded-xl flex items-center justify-center transition shrink-0" title="Gerenciar Categorias">
                             <i class="fa-solid fa-gear"></i>
                         </button>
                     </div>
@@ -475,9 +505,10 @@
                 </div>
             </div>
             
-            <div class="p-5 border-t border-border_color bg-surface shrink-0 grid grid-cols-2 gap-3 pb-8 md:pb-5">
-                <button onclick="app.closeModal()" class="py-3.5 text-sm font-bold text-slate-300 bg-surface_hover hover:bg-[#232C3E] border border-border_color rounded-xl transition">Cancelar</button>
-                <button onclick="app.saveTransaction()" class="py-3.5 text-sm font-bold bg-primary text-white hover:bg-primary_dark rounded-xl transition shadow-[0_0_15px_rgba(59,130,246,0.3)]">Salvar Registo</button>
+            <div class="p-5 border-t border-border_color bg-surface shrink-0 flex gap-3 pb-8 md:pb-5">
+                <button id="modal-delete" onclick="app.deleteTransaction(document.getElementById('form-id').value, true)" aria-label="Excluir registro" title="Excluir registro" class="hidden w-14 shrink-0 py-3.5 text-danger bg-danger/10 hover:bg-danger/20 border border-danger/30 rounded-xl transition"><i class="fa-solid fa-trash"></i></button>
+                <button onclick="app.closeModal()" class="flex-1 py-3.5 text-sm font-bold text-slate-300 bg-surface_hover hover:bg-[#232C3E] border border-border_color rounded-xl transition">Cancelar</button>
+                <button onclick="app.saveTransaction()" class="flex-1 py-3.5 text-sm font-bold bg-primary text-white hover:bg-primary_dark rounded-xl transition shadow-[0_0_15px_rgba(59,130,246,0.3)]">Salvar Registro</button>
             </div>
         </div>
     </div>
@@ -931,7 +962,26 @@
                 }
             },
 
+            todayISO() {
+                const d = new Date(); // data local (evita o dia seguinte após 21h causado pelo UTC)
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            },
+
+            /** Anos do filtro: todos os anos com lançamentos + ano atual e o próximo. */
+            populateYears() {
+                const sel = document.getElementById('filter-year');
+                const atual = sel.value;
+                const now = new Date().getFullYear();
+                const anos = new Set([now, now + 1]);
+                this.data.transactions.forEach(t => anos.add(Number(t.data.slice(0, 4))));
+                const lista = [...anos].sort((a, b) => a - b).map(String);
+                if (sel.options.length === lista.length && [...sel.options].every((o, i) => o.value === lista[i])) return;
+                sel.innerHTML = lista.map(y => `<option value="${y}">${y}</option>`).join('');
+                sel.value = lista.includes(atual) ? atual : String(now);
+            },
+
             setDefaultDate() {
+                this.populateYears();
                 const today = new Date();
                 document.getElementById('filter-year').value = today.getFullYear().toString();
                 document.getElementById('filter-month').value = today.getMonth().toString();
@@ -957,7 +1007,7 @@
                     else el.className = 'nav-item flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-surface_hover border border-transparent rounded-xl font-medium transition';
                 });
 
-                const titles = { 'dashboard': 'Visão Geral ', 'receitas': 'Receitas ', 'despesas': 'Despesas ', 'cartoes': 'Cartões ', 'investimentos': 'Investimentos ' };
+                const titles = { 'dashboard': 'Visão Geral ', 'extrato': 'Extrato ', 'receitas': 'Receitas ', 'despesas': 'Despesas ', 'cartoes': 'Cartões ', 'investimentos': 'Investimentos ' };
                 document.getElementById('header-title').innerText = titles[viewId];
 
                 document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -979,8 +1029,10 @@
             },
 
             renderCurrentView() {
+                this.populateYears();
                 const trans = this.getFilteredTransactions();
                 if (this.currentView === 'dashboard') this.renderDashboardView(trans);
+                if (this.currentView === 'extrato') this.renderExtratoView(trans);
                 if (this.currentView === 'receitas') this.renderReceitasView(trans);
                 if (this.currentView === 'despesas') this.renderDespesasView(trans);
                 if (this.currentView === 'cartoes') this.renderCartoesView(trans);
@@ -1039,13 +1091,15 @@
                 gradientDesp.addColorStop(0, 'rgba(239, 68, 68, 0.8)');
                 gradientDesp.addColorStop(1, 'rgba(239, 68, 68, 0.1)');
 
+                const serie = this.monthlySeries(year, monthVal);
+                document.getElementById('chart-subtitle').innerText = monthVal === 'all' ? `· ${year}` : '· últimos 6 meses';
                 this.chartInstance = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: ['Mês Atual'],
+                        labels: serie.labels,
                         datasets: [
-                            { label: 'Receitas', data: [rec], backgroundColor: gradientRec, borderRadius: 8, barPercentage: 0.4 },
-                            { label: 'Despesas', data: [desp], backgroundColor: gradientDesp, borderRadius: 8, barPercentage: 0.4 }
+                            { label: 'Receitas', data: serie.rec, backgroundColor: gradientRec, borderRadius: 8, barPercentage: 0.7 },
+                            { label: 'Despesas', data: serie.desp, backgroundColor: gradientDesp, borderRadius: 8, barPercentage: 0.7 }
                         ]
                     },
                     options: { 
@@ -1059,6 +1113,43 @@
                 });
 
                 this.renderListUI(trans.slice(0, 5), 'dash-transactions-list');
+            },
+
+            /** Receitas e despesas por mês: 12 meses do ano ou os 6 meses até o mês filtrado. */
+            monthlySeries(year, monthVal) {
+                const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                const periodos = monthVal === 'all'
+                    ? Array.from({ length: 12 }, (_, i) => ({ y: year, m: i }))
+                    : Array.from({ length: 6 }, (_, i) => { const dt = new Date(year, parseInt(monthVal) - 5 + i, 1); return { y: dt.getFullYear(), m: dt.getMonth() }; });
+                const idx = new Map(periodos.map((p, i) => [`${p.y}-${p.m}`, i]));
+                const rec = periodos.map(() => 0), desp = periodos.map(() => 0);
+                this.data.transactions.forEach(t => {
+                    const [y, m] = t.data.split('-').map(Number);
+                    const i = idx.get(`${y}-${m - 1}`);
+                    if (i === undefined) return;
+                    if (t.tipo === 'receita') rec[i] += t.valor;
+                    else if (t.tipo === 'despesa') desp[i] += t.valor;
+                });
+                const multiAno = periodos[0].y !== periodos[periodos.length - 1].y;
+                return {
+                    labels: periodos.map(p => meses[p.m] + (multiAno ? `/${String(p.y).slice(2)}` : '')),
+                    rec: rec.map(v => Math.round(v * 100) / 100),
+                    desp: desp.map(v => Math.round(v * 100) / 100)
+                };
+            },
+
+            renderExtratoView(trans) {
+                const soma = tipo => trans.filter(t => t.tipo === tipo).reduce((s, t) => s + t.valor, 0);
+                document.getElementById('ext-rec').innerText = this.formatCurrency(soma('receita'));
+                document.getElementById('ext-desp').innerText = this.formatCurrency(soma('despesa'));
+                document.getElementById('ext-inv').innerText = this.formatCurrency(soma('investimento'));
+                const busca = document.getElementById('ext-busca').value.trim().toLowerCase();
+                const tipo = document.getElementById('ext-tipo').value;
+                const lista = trans.filter(t =>
+                    (!tipo || (tipo === 'cartao' ? t.cartao : t.tipo === tipo)) &&
+                    (!busca || t.descricao.toLowerCase().includes(busca) || (t.categoria || '').toLowerCase().includes(busca)));
+                document.getElementById('ext-count').innerText = `${lista.length} lançamento${lista.length === 1 ? '' : 's'}`;
+                this.renderListUI(lista, 'ext-list');
             },
 
             renderReceitasView(trans) {
@@ -1114,7 +1205,7 @@
                 container.innerHTML = '';
 
                 if (list.length === 0) {
-                    container.innerHTML = `<div class="text-center py-10 text-slate-500 font-medium text-sm">Sem registos no período.</div>`;
+                    container.innerHTML = `<div class="text-center py-10 text-slate-500 font-medium text-sm">Sem registros no período.</div>`;
                     return;
                 }
 
@@ -1158,9 +1249,9 @@
                             </div>
                             <div class="text-right shrink-0 ml-2">
                                 <div class="font-bold text-sm md:text-base ${valClass}">${signal} ${this.formatCurrency(t.valor)}</div>
-                                <div class="flex justify-end gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button class="p-1.5 text-slate-500 hover:text-primary"><i class="fa-solid fa-pen text-xs"></i></button>
-                                    <button onclick="event.stopPropagation(); app.deleteTransaction(this.closest('[data-id]').dataset.id)" class="p-1.5 text-slate-500 hover:text-danger"><i class="fa-solid fa-trash text-xs"></i></button>
+                                <div class="flex justify-end gap-1 mt-1 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                    <button aria-label="Editar" class="p-1.5 text-slate-500 hover:text-primary"><i class="fa-solid fa-pen text-xs"></i></button>
+                                    <button aria-label="Excluir" onclick="event.stopPropagation(); app.deleteTransaction(this.closest('[data-id]').dataset.id)" class="p-1.5 text-slate-500 hover:text-danger"><i class="fa-solid fa-trash text-xs"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -1225,7 +1316,7 @@
                 document.getElementById('form-id').value = '';
                 document.getElementById('form-descricao').value = '';
                 document.getElementById('form-valor').value = '';
-                document.getElementById('form-data').value = new Date().toISOString().split('T')[0];
+                document.getElementById('form-data').value = this.todayISO();
                 
                 document.getElementById('form-cartao').checked = false;
                 document.getElementById('form-banco').value = 'Nubank';
@@ -1240,7 +1331,8 @@
                 if(this.currentView === 'investimentos') openType = 'investimento';
                 
                 this.setFormType(openType);
-                document.getElementById('modal-title').innerText = 'Novo Registo';
+                document.getElementById('modal-delete').classList.add('hidden');
+                document.getElementById('modal-title').innerText = 'Novo Registro';
             },
 
             saveTransaction() {
@@ -1261,7 +1353,7 @@
 
                 const records = [];
                 if (id) {
-                    if (!this.data.transactions.some(t => String(t.id) === String(id))) return this.showToast("Registo não encontrado. Recarregue os dados.", "error");
+                    if (!this.data.transactions.some(t => String(t.id) === String(id))) return this.showToast("Registro não encontrado. Recarregue os dados.", "error");
                     records.push({ id, tipo, descricao, valor, data: dataStr, categoria, cartao, banco, bandeira });
                 } else if (cartao && parcelas > 1) {
                     const valParcela = Math.floor((valor / parcelas) * 100) / 100;
@@ -1287,7 +1379,7 @@
                     if (idx >= 0) this.data.transactions[idx] = r; else this.data.transactions.push(r);
                 });
                 this.enqueue('upsert', { records: clean });
-                this.showToast(id ? 'Atualizado — sincronizando…' : (clean.length > 1 ? `Adicionado em ${clean.length} parcelas — sincronizando…` : 'Registo adicionado — sincronizando…'));
+                this.showToast(id ? 'Atualizado — sincronizando…' : (clean.length > 1 ? `Adicionado em ${clean.length} parcelas — sincronizando…` : 'Registro adicionado — sincronizando…'));
                 this.renderCurrentView(); this.closeModal();
             },
 
@@ -1295,13 +1387,21 @@
                 const t = this.data.transactions.find(x => String(x.id) === String(id));
                 if (!t) return;
                 this.openModal();
-                document.getElementById('modal-title').innerText = 'Editar Registo';
+                document.getElementById('modal-title').innerText = 'Editar Registro';
                 this.setFormType(t.tipo);
                 document.getElementById('form-id').value = t.id;
                 document.getElementById('form-descricao').value = t.descricao;
                 document.getElementById('form-valor').value = t.valor;
                 document.getElementById('form-data').value = t.data;
-                document.getElementById('form-categoria').value = t.categoria;
+                const catSel = document.getElementById('form-categoria');
+                if (t.categoria && ![...catSel.options].some(o => o.value === t.categoria)) {
+                    // Categoria removida da lista: mantém a original em vez de trocar silenciosamente.
+                    const opt = document.createElement('option');
+                    opt.value = t.categoria; opt.textContent = `${t.categoria} (removida)`;
+                    catSel.appendChild(opt);
+                }
+                catSel.value = t.categoria;
+                document.getElementById('modal-delete').classList.remove('hidden');
                 document.getElementById('form-cartao').checked = t.cartao || false;
                 
                 if(t.cartao) {
@@ -1315,12 +1415,14 @@
                 this.toggleCartaoOpcoes();
             },
 
-            deleteTransaction(id) {
-                this.showConfirm("Deseja eliminar este registo?", () => {
+            deleteTransaction(id, fromModal = false) {
+                if (!id) return;
+                this.showConfirm("Deseja excluir este registro?", () => {
+                    if (fromModal) this.closeModal();
                     this.data.transactions = this.data.transactions.filter(t => String(t.id) !== String(id));
                     this.enqueue('delete', { ids: [String(id)] });
                     this.renderCurrentView(); 
-                    this.showToast("Eliminado — sincronizando…");
+                    this.showToast("Excluído — sincronizando…");
                 });
             },
 
@@ -1331,33 +1433,33 @@
                     node.setAttribute("href", str); node.setAttribute("download", "nexfinance_backup.json");
                     document.body.appendChild(node); node.click(); node.remove();
                     this.toggleMenu(true); this.showToast("Backup exportado!");
-                } catch(e) { this.showToast("Erro", "error"); }
+                } catch(e) { this.showToast("Não foi possível exportar o backup.", "error"); }
             },
 
             importBackup(e) {
                 const file = e.target.files[0]; if (!file) return;
                 e.target.value = '';
-                if (file.size > 5 * 1024 * 1024) return this.showToast("Ficheiro demasiado grande (máx. 5 MB).", "error");
+                if (file.size > 5 * 1024 * 1024) return this.showToast("Arquivo muito grande (máx. 5 MB).", "error");
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     let imported;
-                    try { imported = JSON.parse(ev.target.result); } catch (err) { return this.showToast("Ficheiro Inválido", "error"); }
+                    try { imported = JSON.parse(ev.target.result); } catch (err) { return this.showToast("Arquivo inválido", "error"); }
                     if (!imported || !Array.isArray(imported.transactions)) return this.showToast("Backup inválido: lista de lançamentos ausente.", "error");
                     const clean = imported.transactions.map(t => this.normalizeTransaction(t));
                     const invalid = clean.filter(t => !t).length;
-                    if (invalid > 0) return this.showToast(`Backup recusado: ${invalid} registo(s) inválido(s). Nada foi alterado.`, "error");
+                    if (invalid > 0) return this.showToast(`Backup recusado: ${invalid} registro(s) inválido(s). Nada foi alterado.`, "error");
                     const ids = new Set(clean.map(t => t.id));
                     if (ids.size !== clean.length) return this.showToast("Backup recusado: IDs duplicados. Nada foi alterado.", "error");
                     const cats = imported.config && imported.config.categorias;
                     const existentes = clean.filter(t => this.data.transactions.some(x => x.id === t.id)).length;
-                    this.showConfirm(`Importar ${clean.length} registo(s)? ${existentes} já existem e serão atualizados; os restantes serão adicionados. Nenhum registo atual será apagado.`, () => {
+                    this.showConfirm(`Importar ${clean.length} registro(s)? ${existentes} já existem e serão atualizados; os restantes serão adicionados. Nenhum registro atual será apagado.`, () => {
                         clean.forEach(r => {
                             const idx = this.data.transactions.findIndex(t => t.id === r.id);
                             if (idx >= 0) this.data.transactions[idx] = r; else this.data.transactions.push(r);
                         });
                         for (let i = 0; i < clean.length; i += 200) this.enqueue('upsert', { records: clean.slice(i, i + 200) });
                         if (this.validCategorias(cats)) { this.data.config.categorias = cats; this.saveConfig(); }
-                        this.renderCurrentView(); this.toggleMenu(true); this.showToast("Importação registada — sincronizando…");
+                        this.renderCurrentView(); this.toggleMenu(true); this.showToast("Importação registrada — sincronizando…");
                     });
                 };
                 reader.readAsText(file);

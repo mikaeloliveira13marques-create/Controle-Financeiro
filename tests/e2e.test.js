@@ -37,7 +37,7 @@ async function setup(browser, { sheets, storage } = {}) {
       return route.fulfill({ contentType: 'application/javascript', body: `window.tailwind={};document.head.insertAdjacentHTML('beforeend','<style>${STUB_CSS}</style>');` });
     }
     if (url.includes('chart.js')) {
-      return route.fulfill({ contentType: 'application/javascript', body: 'window.Chart=class{constructor(){}destroy(){}};Chart.defaults={font:{}};' });
+      return route.fulfill({ contentType: 'application/javascript', body: 'window.Chart=class{constructor(c,cfg){window.__chart=cfg}destroy(){}};Chart.defaults={font:{}};' });
     }
     if (url.startsWith('https://script.google.com/')) {
       const body = route.request().postData();
@@ -207,6 +207,67 @@ async function addTransaction(page, { descricao, valor, data = '2026-11-10' }) {
     await login(page);
     await page.waitForFunction(() => app.queue.length === 0 && document.getElementById('sync-text').textContent === 'Sincronizado');
     assert.ok(rows(env).find(x => x[2] === 'Após expirar'));
+    await context.close();
+  });
+
+  await t.test('Fase 1: anos dinâmicos, gráfico, extrato, exclusão no modal e categoria removida', async () => {
+    const sheet = seed(); // 2026-11: receita 3000, despesa 1000
+    sheet.push([1700000000010, 'despesa', 'Presente antigo', 250, d('2025-12-20'), 'Lazer', false, '', '']);
+    sheet.push([1700000000011, 'despesa', 'Mercado outubro', 400.5, d('2026-10-15'), 'Mercado', true, 'Nubank', 'Visa']);
+    sheet.push([1700000000012, 'investimento', 'CDB teste', 300, d('2026-11-07'), 'Renda Fixa', false, '', '']);
+    const { page, env, context } = await setup(browser, { sheets: { 'Página1': sheet } });
+    await login(page);
+    await page.waitForFunction(() => app.queue.length === 0 && document.getElementById('sync-text').textContent === 'Sincronizado');
+
+    const anos = await page.$$eval('#filter-year option', os => os.map(o => o.value));
+    assert.ok(['2025', '2026'].every(a => anos.includes(a)), `anos: ${anos}`);
+
+    await page.selectOption('#filter-year', '2026');
+    await page.selectOption('#filter-month', '10'); // novembro
+    let chart = await page.evaluate(() => window.__chart.data);
+    assert.deepEqual(chart.labels, ['Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov']);
+    assert.deepEqual(chart.datasets[0].data, [0, 0, 0, 0, 0, 3000]);
+    assert.deepEqual(chart.datasets[1].data, [0, 0, 0, 0, 400.5, 1000]);
+    await page.selectOption('#filter-month', '1'); // fevereiro: janela atravessa o ano
+    chart = await page.evaluate(() => window.__chart.data);
+    assert.equal(chart.labels[0], 'Set/25');
+    assert.equal(chart.datasets[1].data[3], 250); // dez/25
+    await page.selectOption('#filter-month', 'all');
+    chart = await page.evaluate(() => window.__chart.data);
+    assert.equal(chart.labels.length, 12);
+
+    // "Ver todas" abre o extrato completo do período, com busca e filtro de tipo
+    await page.click('button:has-text("Ver todas")');
+    assert.equal(await page.evaluate(() => app.currentView), 'extrato');
+    assert.equal((await page.textContent('#ext-count')).trim(), '4 lançamentos');
+    assert.equal((await page.textContent('#ext-inv')).replace(/\s/g, ' '), 'R$ 300,00');
+    await page.fill('#ext-busca', 'mercado');
+    assert.equal((await page.textContent('#ext-count')).trim(), '1 lançamento');
+    await page.fill('#ext-busca', '');
+    await page.selectOption('#ext-tipo', 'cartao');
+    assert.match(await page.textContent('#ext-list'), /Mercado outubro/);
+    assert.equal((await page.textContent('#ext-count')).trim(), '1 lançamento');
+
+    // Categoria removida é preservada ao editar
+    await page.evaluate(() => { app.data.config.categorias.despesa = app.data.config.categorias.despesa.filter(c => c !== 'Moradia'); });
+    await page.evaluate(() => app.editTransaction('1700000000002'));
+    assert.equal(await page.inputValue('#form-categoria'), 'Moradia');
+
+    // Excluir pelo modal
+    assert.equal(await page.isVisible('#modal-delete'), true);
+    await page.click('#modal-delete');
+    await page.click('#confirm-btn-yes');
+    await page.waitForFunction(() => app.queue.length === 0 && document.getElementById('sync-text').textContent === 'Sincronizado');
+    assert.equal(rows(env).some(r => String(r[0]) === '1700000000002'), false);
+    assert.equal(rows(env).length, 4); // 5 iniciais − 1 excluído; demais intactos
+    await page.evaluate(() => app.openModal());
+    assert.equal(await page.isVisible('#modal-delete'), false, 'botão excluir oculto em novo registro');
+
+    // Data padrão usa o fuso local (23h30 em Brasília = 02h30 UTC do dia seguinte)
+    await page.clock.setFixedTime(new Date('2026-11-23T02:30:00Z'));
+    assert.equal(await page.evaluate(() => app.todayISO()), '2026-11-22');
+    assert.equal(await page.$eval('meta[name=viewport]', m => m.content.includes('user-scalable=no')), false);
+    assert.deepEqual(page.errors, []);
     await context.close();
   });
 
