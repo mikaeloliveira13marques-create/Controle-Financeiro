@@ -49,9 +49,9 @@ Data padrão no fuso local · anos do filtro gerados a partir dos lançamentos �
 4. **Validação dupla** (cliente e servidor); textos iniciados por `= + - @` gravados como texto (anti-injeção de fórmula); escape de HTML em toda renderização.
 5. **Recuperação**: `_Log` com estado anterior + backup automático da planilha no Drive na 1ª gravação do dia + gatilho diário opcional (mantém 30) + menu "Restaurar registro excluído".
 6. **Importação de backup** passou a **mesclar** (atualiza IDs existentes e adiciona novos) em vez de substituir tudo — evita exclusão em massa; recusa o arquivo inteiro se houver registro inválido.
+7. Desbloqueio offline não é permitido (o PIN é a credencial do servidor; guardar um verificador local permitiria descobri-lo por força bruta).
 8. Categorias usadas nos lançamentos são sempre incluídas na lista (e enviadas à `Config`).
 9. Botão flutuante usa a classe `fab-btn` (`fab` conflita com o Font Awesome).
-7. Desbloqueio offline não é permitido (o PIN é a credencial do servidor; guardar um verificador local permitiria descobri-lo por força bruta).
 
 ## Regras de negócio confirmadas
 _Nenhuma ainda._ Pendentes: tratamento de investimentos no saldo; regime de cartão (competência × caixa). Ver proposta na entrega da Fase 0.
