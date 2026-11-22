@@ -579,7 +579,7 @@
             CACHE_KEY: 'meuControleSPA',
             QUEUE_KEY: 'nexfinance_queue',
             DEFAULT_CATEGORIAS: {
-                despesa: ['Mercado', 'Lazer', 'Transporte', 'Moradia', 'Saúde', 'Outros'],
+                despesa: ['Mercado', 'Alimentação', 'Lazer', 'Transporte', 'Moradia', 'Saúde', 'Outros', 'Pagamento de Fatura'],
                 receita: ['Salário', 'Freelance', 'Rendimento', 'Venda', 'Outros'],
                 investimento: ['Renda Fixa', 'Ações', 'Fundos Imobiliários', 'Criptomoedas', 'Reserva de Emergência']
             },
@@ -1131,20 +1131,19 @@
                     const tDate = new Date(t.data + 'T00:00:00');
                     if (tDate < filterStartDate) {
                         if (t.tipo === 'receita') saldoAnterior += parseFloat(t.valor);
-                        if (t.tipo === 'despesa') saldoAnterior -= parseFloat(t.valor);
+                        if (this.saiDoSaldo(t)) saldoAnterior -= parseFloat(t.valor);
                     }
                 });
 
-                let rec = 0, desp = 0, cart = 0;
+                let rec = 0, desp = 0, cart = 0, saidas = 0;
                 trans.forEach(t => {
                     if (t.tipo === 'receita') rec += parseFloat(t.valor);
-                    else if (t.tipo === 'despesa') {
-                        desp += parseFloat(t.valor);
-                        if (t.cartao) cart += parseFloat(t.valor);
-                    }
+                    if (this.isGasto(t)) desp += parseFloat(t.valor);
+                    if (this.isGasto(t) && t.cartao) cart += parseFloat(t.valor);
+                    if (this.saiDoSaldo(t)) saidas += parseFloat(t.valor);
                 });
                 
-                const saldoAtual = saldoAnterior + rec - desp;
+                const saldoAtual = saldoAnterior + rec - saidas;
 
                 document.getElementById('dash-receitas').innerText = this.formatCurrency(rec);
                 document.getElementById('dash-despesas').innerText = this.formatCurrency(desp);
@@ -1194,6 +1193,16 @@
                 this.renderListUI(trans.slice(0, 5), 'dash-transactions-list');
             },
 
+            // ---------- Regras de contabilização (cartão: modelo por competência) ----------
+            // Compra no cartão = despesa na sua categoria, mas só sai do saldo quando a fatura é paga.
+            // Pagamento de fatura (categoria "Pagamento de Fatura") = sai do saldo, mas não é uma nova despesa.
+            CATEGORIA_PAGAMENTO_FATURA: 'Pagamento de Fatura',
+            isPagamentoFatura(t) {
+                return t.tipo === 'despesa' && String(t.categoria || '').trim().toLowerCase() === 'pagamento de fatura';
+            },
+            isGasto(t) { return t.tipo === 'despesa' && !this.isPagamentoFatura(t); },
+            saiDoSaldo(t) { return t.tipo === 'despesa' && !t.cartao; },
+
             /** Receitas e despesas por mês: 12 meses do ano ou os 6 meses até o mês filtrado. */
             monthlySeries(year, monthVal) {
                 const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -1207,7 +1216,7 @@
                     const i = idx.get(`${y}-${m - 1}`);
                     if (i === undefined) return;
                     if (t.tipo === 'receita') rec[i] += t.valor;
-                    else if (t.tipo === 'despesa') desp[i] += t.valor;
+                    else if (this.isGasto(t)) desp[i] += t.valor;
                 });
                 const multiAno = periodos[0].y !== periodos[periodos.length - 1].y;
                 return {
@@ -1218,7 +1227,7 @@
             },
 
             renderExtratoView(trans) {
-                const soma = tipo => trans.filter(t => t.tipo === tipo).reduce((s, t) => s + t.valor, 0);
+                const soma = tipo => trans.filter(t => tipo === 'despesa' ? this.isGasto(t) : t.tipo === tipo).reduce((s, t) => s + t.valor, 0);
                 document.getElementById('ext-rec').innerText = this.formatCurrency(soma('receita'));
                 document.getElementById('ext-desp').innerText = this.formatCurrency(soma('despesa'));
                 document.getElementById('ext-inv').innerText = this.formatCurrency(soma('investimento'));
@@ -1245,8 +1254,9 @@
 
             renderDespesasView(trans) {
                 const desps = trans.filter(t => t.tipo === 'despesa');
-                const total = desps.reduce((sum, t) => sum + parseFloat(t.valor), 0);
-                const maior = desps.reduce((prev, curr) => (parseFloat(prev.valor) > parseFloat(curr.valor)) ? prev : curr, {valor: 0, descricao: '-'});
+                const gastos = desps.filter(t => this.isGasto(t)); // pagamentos de fatura não entram no total
+                const total = gastos.reduce((sum, t) => sum + parseFloat(t.valor), 0);
+                const maior = gastos.reduce((prev, curr) => (parseFloat(prev.valor) > parseFloat(curr.valor)) ? prev : curr, {valor: 0, descricao: '-'});
 
                 document.getElementById('desp-total').innerText = this.formatCurrency(total);
                 document.getElementById('desp-maior-nome').innerText = maior.valor > 0 ? maior.descricao : '-';
@@ -1302,6 +1312,7 @@
                         else if(t.categoria === 'Transporte') { icon = 'fa-car'; iconColor = 'bg-blue-500/10 text-blue-500 border border-blue-500/20'; }
                         else if(t.categoria === 'Lazer') { icon = 'fa-ticket'; iconColor = 'bg-pink-500/10 text-pink-500 border border-pink-500/20'; }
                         if(t.cartao) { icon = 'fa-credit-card'; iconColor = 'bg-slate-700 text-white border border-slate-600'; }
+                        if(this.isPagamentoFatura(t)) { icon = 'fa-file-invoice-dollar'; iconColor = 'bg-blue-500/10 text-blue-500 border border-blue-500/20'; }
                     }
                     
                     let cartaoBadge = '';

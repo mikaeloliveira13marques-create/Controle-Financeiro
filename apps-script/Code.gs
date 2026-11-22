@@ -14,7 +14,7 @@
  * Implantação: veja docs/IMPLANTACAO-FASE0.md
  */
 
-const API_VERSION = '2.1.0';
+const API_VERSION = '2.1.1';
 const SHEET_NAME = 'Página1';
 const CONFIG_SHEET = 'Config';
 const LOG_SHEET = '_Log';
@@ -261,7 +261,9 @@ function upsert_(records) {
 
   order.forEach(function (id) {
     const rec = byId[id];
-    rec.atualizadoEm = stamp++;
+    // A nova versão é sempre maior que a anterior, mesmo com duas gravações no mesmo milissegundo.
+    const anterior = index[id] !== undefined ? (Number(rows[index[id]][verCol]) || 0) : 0;
+    rec.atualizadoEm = Math.max(stamp++, anterior + 1);
     versions[id] = rec.atualizadoEm;
     delete rec.versao;
     const pos = index[id];
