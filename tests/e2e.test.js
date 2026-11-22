@@ -340,6 +340,33 @@ async function addTransaction(page, { descricao, valor, data = '2026-11-10' }) {
     await context.close();
   });
 
+  await t.test('cartão por competência: compra é despesa, pagamento de fatura só sai do saldo', async () => {
+    const sheet = [HEADERS,
+      [1, 'receita', 'Salário', 3000, d('2026-10-05'), 'Salário', false, '', ''],
+      [2, 'despesa', 'Aluguel', 1000, d('2026-10-06'), 'Moradia', false, '', ''],
+      [3, 'despesa', 'Spotify (fatura)', 30, d('2026-10-13'), 'Lazer', true, 'Nubank', 'Mastercard'],
+      [4, 'despesa', 'Mercado (fatura)', 170, d('2026-10-13'), 'Mercado', true, 'Nubank', 'Mastercard'],
+      [5, 'despesa', 'Pagamento fatura Nubank', 200, d('2026-10-13'), 'Pagamento de Fatura', false, '', '']];
+    const { page, context } = await setup(browser, { sheets: { 'Página1': sheet } });
+    await login(page);
+    await page.waitForFunction(() => app.queue.length === 0 && document.getElementById('sync-text').textContent === 'Sincronizado');
+    await page.selectOption('#filter-year', '2026');
+    await page.selectOption('#filter-month', '9'); // outubro
+    const txt = async id => (await page.textContent(id)).replace(/\s/g, ' ');
+    assert.equal(await txt('#dash-receitas'), 'R$ 3.000,00');
+    assert.equal(await txt('#dash-despesas'), 'R$ 1.200,00'); // 1000 + 30 + 170 (pagamento não duplica)
+    assert.equal(await txt('#dash-saldo'), 'R$ 1.800,00');    // 3000 − 1000 − 200 pagos (compras não saem 2×)
+    assert.equal(await txt('#dash-cartao'), 'R$ 200,00');
+    const chart = await page.evaluate(() => window.__chart.data);
+    assert.equal(chart.datasets[1].data[5], 1200);
+    await page.evaluate(() => app.navigate('despesas'));
+    assert.equal(await txt('#desp-total'), 'R$ 1.200,00');
+    assert.match(await page.textContent('#desp-list'), /Pagamento fatura Nubank/); // continua visível na lista
+    await page.evaluate(() => app.navigate('extrato'));
+    assert.equal(await txt('#ext-desp'), 'R$ 1.200,00');
+    await context.close();
+  });
+
   await t.test('backup com registro inválido é recusado sem alterar nada', async () => {
     const { page, env, context } = await setup(browser);
     await login(page);

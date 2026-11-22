@@ -62,7 +62,8 @@ Tema claro com efeito *liquid glass*: fundo em gradiente pastel, cartões/menus/
 9. Botão flutuante usa a classe `fab-btn` (`fab` conflita com o Font Awesome).
 
 ## Regras de negócio confirmadas
-_Nenhuma ainda._ Pendentes: tratamento de investimentos no saldo; regime de cartão (competência × caixa). Ver proposta na entrega da Fase 0.
+- **Cartão de crédito — competência (2026-11-22):** cada compra no cartão (`cartao = true`) é despesa na sua categoria, com data no vencimento da fatura e data real da compra na descrição; não sai do saldo. O pagamento da fatura é `despesa` com categoria **Pagamento de Fatura**: sai do saldo, mas não entra nos totais de despesas nem no gráfico (`isGasto` / `saiDoSaldo` no `index.html`).
+- Investimentos: ainda não descontam do saldo disponível (decisão pendente).
 
 ## Estado atual
 - **Em produção desde 2026-11-22**: API 2.1.0 publicada na URL original (GET responde só a versão; leitura sem sessão é recusada com `AUTH`) e frontend das Fases 0, 1 e 2 integrado à `main` (PR #1). Dados de produção conferidos após a implantação: 11 registros idênticos ao backup de 2026-11-10.
