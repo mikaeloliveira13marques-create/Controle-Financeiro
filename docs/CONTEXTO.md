@@ -47,6 +47,9 @@ Data padrão no fuso local · anos do filtro gerados a partir dos lançamentos �
 - **Parcelas vinculadas** (`grupoParcela`; parcelas antigas `base-n` são reconhecidas pelo id): editar só a parcela ou a compra inteira (total redistribuído, mesmos IDs e quantidade); excluir só a parcela ou todas.
 - **Concorrência entre aparelhos** (`atualizadoEm`): a edição envia a versão conhecida; se outro aparelho alterou/excluiu o registro, o servidor recusa (`CONFLICT`), nada é sobrescrito e o app recarrega os dados.
 
+## Visual (2026-11-22)
+Tema claro com efeito *liquid glass*: fundo em gradiente pastel, cartões/menus/modais translúcidos (`backdrop-filter: blur + saturate`, borda e brilho internos), cor de texto `ink` (#0F172A). Paleta no `tailwind.config` (`dark`/`surface`/`border_color` agora são tons claros); cartão de crédito usa `.card-dark`.
+
 ## Decisões técnicas
 1. **Autenticação**: PIN validado no servidor (hash SHA-256 iterado + salt nas Propriedades do Script), sessão aleatória no CacheService, bloqueio de 15 min após 5 falhas, "Encerrar todas as sessões" no menu. Sem segredo no código público. Evolução possível: login com conta Google (ID token verificado no Apps Script).
 2. **Gravação por registro** (upsert/delete por ID) no lugar do `sync` que apagava a aba inteira. Fila FIFO no cliente (uma requisição por vez, persistida, com nova tentativa progressiva) + `LockService` no servidor.
